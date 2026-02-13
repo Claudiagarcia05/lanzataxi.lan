@@ -6,13 +6,13 @@ const showAuthModal = ref(false);
 const isMenuOpen = ref(false);
 
 const municipios = [
-  { nombre: 'Arrecife', icon: '📍' },
-  { nombre: 'San Bartolome', icon: '📍' },
-  { nombre: 'Teguise', icon: '📍' },
-  { nombre: 'Tias', icon: '📍' },
-  { nombre: 'Yaiza', icon: '📍' },
-  { nombre: 'Tinajo', icon: '📍' },
-  { nombre: 'Haria', icon: '📍' },
+  { nombre: 'Arrecife' },
+  { nombre: 'San Bartolome' },
+  { nombre: 'Teguise' },
+  { nombre: 'Tias' },
+  { nombre: 'Yaiza' },
+  { nombre: 'Tinajo' },
+  { nombre: 'Haria' },
 ];
 
 const scrollToFooter = () => {
@@ -23,9 +23,9 @@ const scrollToFooter = () => {
 };
 
 const scrollToMunicipios = () => {
-  const section = document.getElementById('municipios-section');
-  if (section) {
-    section.scrollIntoView({ behavior: 'smooth' });
+  const municipiosSection = document.getElementById('municipios-section');
+  if (municipiosSection) {
+    municipiosSection.scrollIntoView({ behavior: 'smooth' });
   }
 };
 </script>
@@ -40,29 +40,45 @@ const scrollToMunicipios = () => {
         </div>
 
         <div class="hidden md:flex items-center space-x-8">
-          <button @click="scrollToMunicipios" class="flex items-center space-x-2 text-neutral-dark hover:text-lanzarote-blue transition-colors">
-            <span>📍</span>
-            <span>Municipios</span>
+          <button
+            @click="scrollToMunicipios"
+            class="text-neutral-dark hover:text-lanzarote-blue transition-colors font-medium"
+          >
+            Municipios
           </button>
 
-          <button @click="scrollToFooter" class="flex items-center space-x-2 text-neutral-dark hover:text-lanzarote-blue transition-colors">
-            <span>📞</span>
-            <span>Contacto</span>
+          <button
+            @click="scrollToFooter"
+            class="text-neutral-dark hover:text-lanzarote-blue transition-colors font-medium"
+          >
+            Contacto
           </button>
 
           <button
             @click="showAuthModal = true"
-            class="bg-lanzarote-blue text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-lanzarote-yellow hover:text-black transition-all transform hover:scale-105 shadow-md"
+            class="bg-lanzarote-blue text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-lanzarote-yellow hover:text-black transition-all shadow-md"
           >
-            Iniciar Sesion / Registrarse
+            Login
           </button>
         </div>
 
         <div class="md:hidden flex items-center">
-          <button @click="isMenuOpen = !isMenuOpen" class="text-neutral-dark" aria-label="Toggle menu">
+          <button @click="isMenuOpen = !isMenuOpen" class="text-neutral-dark">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path v-if="!isMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-              <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              <path
+                v-if="!isMenuOpen"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+              <path
+                v-else
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -70,19 +86,23 @@ const scrollToMunicipios = () => {
 
       <div v-show="isMenuOpen" class="md:hidden py-4 border-t border-neutral-volcanic">
         <div class="flex flex-col space-y-4">
-          <button @click="scrollToMunicipios; isMenuOpen = false" class="flex items-center space-x-2 text-neutral-dark hover:text-lanzarote-blue">
-            <span>📍</span>
-            <span>Municipios</span>
+          <button
+            @click="scrollToMunicipios; isMenuOpen = false"
+            class="text-neutral-dark hover:text-lanzarote-blue font-medium text-left"
+          >
+            Municipios
           </button>
-          <button @click="scrollToFooter; isMenuOpen = false" class="flex items-center space-x-2 text-neutral-dark hover:text-lanzarote-blue">
-            <span>📞</span>
-            <span>Contacto</span>
+          <button
+            @click="scrollToFooter; isMenuOpen = false"
+            class="text-neutral-dark hover:text-lanzarote-blue font-medium text-left"
+          >
+            Contacto
           </button>
           <button
             @click="showAuthModal = true; isMenuOpen = false"
             class="bg-lanzarote-blue text-white px-4 py-2 rounded-lg font-semibold hover:bg-lanzarote-yellow hover:text-black w-full"
           >
-            Iniciar Sesion / Registrarse
+            Login
           </button>
         </div>
       </div>

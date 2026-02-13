@@ -25,6 +25,7 @@
         "leaflet": "^1.9.4",
         "pinia": "^3.0.4",
         "pinia-plugin-persistedstate": "^4.5.0",
-        "vue-router": "^4.5.1"
+        "vue-router": "^4.5.1",
+        "ziggy-js": "^2.2.0"
     }
 }

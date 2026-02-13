@@ -72,7 +72,7 @@ const handleSubmit = async () => {
 <template>
   <Teleport to="body">
     <div v-if="modelValue" class="fixed inset-0 z-50 overflow-y-auto">
-      <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" @click="closeModal"></div>
+      <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" @click="closeModal"></div>
 
       <div class="flex min-h-full items-center justify-center p-4">
         <div class="relative bg-white rounded-2xl shadow-xl max-w-md w-full p-8 transform transition-all">
@@ -152,7 +152,7 @@ const handleSubmit = async () => {
                       : 'border-neutral-volcanic text-neutral-dark hover:border-lanzarote-blue'
                   ]"
                 >
-                  👤 Pasajero
+                  Pasajero
                 </button>
                 <button
                   type="button"
@@ -164,7 +164,7 @@ const handleSubmit = async () => {
                       : 'border-neutral-volcanic text-neutral-dark hover:border-lanzarote-blue'
                   ]"
                 >
-                  🚕 Taxista
+                  Taxista
                 </button>
                 <button
                   type="button"
@@ -176,7 +176,7 @@ const handleSubmit = async () => {
                       : 'border-neutral-volcanic text-neutral-dark hover:border-lanzarote-blue'
                   ]"
                 >
-                  👑 Admin
+                  Admin
                 </button>
               </div>
             </div>
