@@ -6,15 +6,15 @@ use Closure;
 
 class SecurityHeaders
 {
-    public function handle($request, Closure $next)
+    public function handle($solicitud, Closure $next)
     {
-        $response = $next($request);
+        $respuesta = $next($solicitud);
 
-        $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
-        $response->headers->set('X-Content-Type-Options', 'nosniff');
-        $response->headers->set('X-XSS-Protection', '1; mode=block');
-        $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $respuesta->headers->set('X-Frame-Options', 'SAMEORIGIN');
+        $respuesta->headers->set('X-Content-Type-Options', 'nosniff');
+        $respuesta->headers->set('X-XSS-Protection', '1; mode=block');
+        $respuesta->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-        return $response;
+        return $respuesta;
     }
 }

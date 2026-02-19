@@ -2,22 +2,22 @@
 
 namespace Database\Factories;
 
-use App\Models\Trip;
+use App\Models\viaje;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Trip>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\viaje>
  */
-class TripFactory extends Factory
+class ViajeFactory extends Factory
 {
-    protected $model = Trip::class;
+    protected $model = viaje::class;
 
     public function definition(): array
     {
         return [
-            'passenger_id' => User::factory()->state(['role' => 'passenger']),
-            'driver_id' => null,
+            'pasajero_id' => User::factory()->state(['role' => 'pasajero']),
+            'conductor_id' => null,
             'taxi_id' => null,
             'pickup_lat' => $this->faker->latitude(28.8, 29.1),
             'pickup_lng' => $this->faker->longitude(-13.8, -13.4),
@@ -30,3 +30,4 @@ class TripFactory extends Factory
         ];
     }
 }
+

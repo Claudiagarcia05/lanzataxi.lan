@@ -5,7 +5,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
 const props = defineProps({
-    status: {
+    estado: {
         type: String,
     },
 });
@@ -17,7 +17,7 @@ const submit = () => {
 };
 
 const verificationLinkSent = computed(
-    () => props.status === 'verification-link-sent',
+    () => props.estado === 'verification-link-sent',
 );
 </script>
 

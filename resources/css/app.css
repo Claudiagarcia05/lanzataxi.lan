@@ -1,3 +1,36 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.high-contrast body {
+	background: #ffffff;
+	color: #000000;
+}
+
+.high-contrast .bg-lanzarote-blue {
+	background-color: #000000;
+}
+
+.high-contrast .text-lanzarote-blue {
+	color: #000000;
+}
+
+.high-contrast .bg-neutral-soft {
+	background-color: #ffffff;
+}
+
+.high-contrast .border-neutral-volcanic {
+	border-color: #000000;
+}
+
+.high-contrast .text-neutral-slate {
+	color: #111111;
+}
+
+.high-contrast .bg-white\/10 {
+	background-color: #000000;
+}
+
+.high-contrast .text-white\/80 {
+	color: #ffffff;
+}

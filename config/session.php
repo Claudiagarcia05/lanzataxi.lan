@@ -6,7 +6,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Default Session Driver
+    | Default Session driver
     |--------------------------------------------------------------------------
     |
     | This option determines the default session driver that is utilized for
@@ -51,7 +51,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Session File Location
+    | Session File location
     |--------------------------------------------------------------------------
     |
     | When utilizing the "file" session driver, the session files are placed
@@ -215,3 +215,4 @@ return [
     'partitioned' => env('SESSION_PARTITIONED_COOKIE', false),
 
 ];
+

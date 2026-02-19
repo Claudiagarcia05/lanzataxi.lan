@@ -16,10 +16,10 @@ class ProfileController extends Controller
     /**
      * Display the user's profile form.
      */
-    public function edit(Request $request): Response
+    public function edit(Request $solicitud): Response
     {
         return Inertia::render('Profile/Edit', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'mustVerifyEmail' => $solicitud->user() instanceof MustVerifyEmail,
             'status' => session('status'),
         ]);
     }
@@ -27,15 +27,15 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function update(ProfileUpdateRequest $solicitud): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $solicitud->user()->fill($solicitud->validated());
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        if ($solicitud->user()->isDirty('email')) {
+            $solicitud->user()->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $solicitud->user()->save();
 
         return Redirect::route('profile.edit');
     }
@@ -43,20 +43,20 @@ class ProfileController extends Controller
     /**
      * Delete the user's account.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $solicitud): RedirectResponse
     {
-        $request->validate([
+        $solicitud->validate([
             'password' => ['required', 'current_password'],
         ]);
 
-        $user = $request->user();
+        $usuario = $solicitud->user();
 
-        Auth::logout();
+        Auth::guard('web')->logout();
 
-        $user->delete();
+        $usuario->delete();
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        $solicitud->session()->invalidate();
+        $solicitud->session()->regenerateToken();
 
         return Redirect::to('/');
     }

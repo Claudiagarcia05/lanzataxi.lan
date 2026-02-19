@@ -9,15 +9,16 @@ class Taxi extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['driver_id', 'plate', 'model', 'capacity', 'color', 'status'];
+    protected $fillable = ['conductor_id', 'plate', 'model', 'capacity', 'color', 'status'];
 
-    public function driver()
+    public function conductor()
     {
-        return $this->belongsTo(Driver::class);
+        return $this->belongsTo(conductor::class);
     }
 
-    public function trips()
+    public function viajes()
     {
-        return $this->hasMany(Trip::class);
+        return $this->hasMany(viaje::class);
     }
 }
+

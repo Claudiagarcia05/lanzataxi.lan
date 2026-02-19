@@ -9,7 +9,7 @@ defineProps({
     mustVerifyEmail: {
         type: Boolean,
     },
-    status: {
+    estado: {
         type: String,
     },
 });
@@ -34,7 +34,7 @@ defineProps({
                 >
                     <UpdateProfileInformationForm
                         :must-verify-email="mustVerifyEmail"
-                        :status="status"
+                        :estado="estado"
                         class="max-w-xl"
                     />
                 </div>

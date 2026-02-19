@@ -10,13 +10,13 @@ class TaxiController extends Controller
 {
     public function index()
     {
-        return response()->json(Taxi::latest()->get());
+        return response()->json(Taxi::with('conductor.user:id,name')->latest()->get());
     }
 
-    public function store(Request $request)
+    public function store(Request $solicitud)
     {
-        $validated = $request->validate([
-            'driver_id' => 'required|exists:drivers,id',
+        $validated = $solicitud->validate([
+            'conductor_id' => 'required|exists:conductors,id',
             'plate' => 'required|string|unique:taxis,plate',
             'model' => 'required|string',
             'capacity' => 'required|integer|min:1',
@@ -31,13 +31,13 @@ class TaxiController extends Controller
 
     public function show(Taxi $taxi)
     {
-        return response()->json($taxi);
+        return response()->json($taxi->load('conductor.user:id,name,email,phone'));
     }
 
-    public function update(Request $request, Taxi $taxi)
+    public function update(Request $solicitud, Taxi $taxi)
     {
-        $validated = $request->validate([
-            'driver_id' => 'sometimes|exists:drivers,id',
+        $validated = $solicitud->validate([
+            'conductor_id' => 'sometimes|exists:conductors,id',
             'plate' => 'sometimes|string|unique:taxis,plate,' . $taxi->id,
             'model' => 'sometimes|string',
             'capacity' => 'sometimes|integer|min:1',
@@ -59,8 +59,29 @@ class TaxiController extends Controller
 
     public function available()
     {
-        $taxis = Taxi::where('status', 'available')->get();
+        try {
+            $taxis = Taxi::with('conductor.user:id,name')
+                ->where('status', 'available')
+                ->whereHas('conductor.user') // Asegurar que tenga conductor y usuario
+                ->get()
+                ->map(function ($taxi) {
+                    return [
+                        'id' => $taxi->id,
+                        'plate' => $taxi->plate,
+                        'model' => $taxi->model,
+                        'status' => $taxi->status,
+                        'conductor_name' => $taxi->conductor?->user?->name ?? 'Sin conductor',
+                        'conductor_id' => $taxi->conductor?->id,
+                    ];
+                });
 
-        return response()->json($taxis);
+            return response()->json($taxis);
+        } catch (\Exception $e) {
+            \Log::error('Error en available taxis: ' . $e->getMessage());
+            
+            // Retornar array vacÃƒÂ­o en caso de error
+            return response()->json([]);
+        }
     }
 }
+

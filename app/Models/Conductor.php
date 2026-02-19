@@ -5,11 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Driver extends Model
+class conductor extends Model
 {
     use HasFactory;
 
     protected $fillable = ['user_id', 'license_number', 'rating', 'is_active'];
+
+    protected $casts = [
+        'rating' => 'float',
+        'is_active' => 'boolean',
+    ];
 
     public function user()
     {
@@ -21,13 +26,14 @@ class Driver extends Model
         return $this->hasOne(Taxi::class);
     }
 
-    public function trips()
+    public function viajes()
     {
-        return $this->hasMany(Trip::class);
+        return $this->hasMany(viaje::class);
     }
 
-    public function locations()
+    public function ubicacions()
     {
-        return $this->hasMany(Location::class);
+        return $this->hasMany(ubicacion::class);
     }
 }
+

@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('trips', function (Blueprint $table) {
+        Schema::create('viajes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('passenger_id')->constrained('users');
-            $table->foreignId('driver_id')->nullable()->constrained();
+            $table->foreignId('pasajero_id')->constrained('users');
+            $table->foreignId('conductor_id')->nullable()->constrained();
             $table->foreignId('taxi_id')->nullable()->constrained();
             $table->decimal('pickup_lat', 10, 8);
             $table->decimal('pickup_lng', 11, 8);
@@ -33,6 +33,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('trips');
+        Schema::dropIfExists('viajes');
     }
 };
+

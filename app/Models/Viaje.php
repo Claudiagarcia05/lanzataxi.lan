@@ -5,24 +5,38 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Trip extends Model
+class viaje extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'passenger_id', 'driver_id', 'taxi_id',
+        'pasajero_id', 'conductor_id', 'taxi_id',
         'pickup_lat', 'pickup_lng', 'dropoff_lat', 'dropoff_lng',
+        'pickup_address', 'dropoff_address',
         'status', 'distance', 'price', 'co2_saved',
+        'rating', 'comment', 'end_time',
     ];
 
-    public function passenger()
+    protected $casts = [
+        'pickup_lat' => 'float',
+        'pickup_lng' => 'float',
+        'dropoff_lat' => 'float',
+        'dropoff_lng' => 'float',
+        'distance' => 'float',
+        'price' => 'float',
+        'co2_saved' => 'float',
+        'rating' => 'integer',
+        'end_time' => 'datetime',
+    ];
+
+    public function pasajero()
     {
-        return $this->belongsTo(User::class, 'passenger_id');
+        return $this->belongsTo(User::class, 'pasajero_id');
     }
 
-    public function driver()
+    public function conductor()
     {
-        return $this->belongsTo(Driver::class);
+        return $this->belongsTo(conductor::class);
     }
 
     public function taxi()
@@ -30,9 +44,9 @@ class Trip extends Model
         return $this->belongsTo(Taxi::class);
     }
 
-    public function payment()
+    public function pago()
     {
-        return $this->hasOne(Payment::class);
+        return $this->hasOne(pago::class);
     }
 
     // Metodo para calcular CO2 ahorrado
@@ -47,3 +61,4 @@ class Trip extends Model
         return 0;
     }
 }
+

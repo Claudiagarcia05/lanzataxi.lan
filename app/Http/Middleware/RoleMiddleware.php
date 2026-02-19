@@ -13,7 +13,7 @@ class RoleMiddleware
      *
      * @param  array<int, string>  $roles
      */
-    public function handle(Request $request, Closure $next, ...$roles): Response
+    public function handle(Request $solicitud, Closure $next, ...$roles): Response
     {
         if (!auth()->check()) {
             return redirect()->route('login');
@@ -23,6 +23,6 @@ class RoleMiddleware
             abort(403, 'No tienes permiso para acceder a esta pagina.');
         }
 
-        return $next($request);
+        return $next($solicitud);
     }
 }

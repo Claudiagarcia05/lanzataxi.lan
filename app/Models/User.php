@@ -24,6 +24,8 @@ class User extends Authenticatable
         'password',
         'role',
         'phone',
+        'avatar',
+        'wallet_balance',
     ];
 
     /**
@@ -46,16 +48,40 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'wallet_balance' => 'decimal:2',
         ];
     }
 
-    public function driver()
+    public function conductor()
     {
-        return $this->hasOne(Driver::class);
+        return $this->hasOne(conductor::class);
     }
 
-    public function tripsAsPassenger()
+    public function viajesAspasajero()
     {
-        return $this->hasMany(Trip::class, 'passenger_id');
+        return $this->hasMany(viaje::class, 'pasajero_id');
+    }
+
+    public function acceptedviajesAsconductor()
+    {
+        return $this->hasManyThrough(
+            viaje::class,
+            conductor::class,
+            'user_id',
+            'conductor_id',
+            'id',
+            'id'
+        );
+    }
+
+    public function RutaFavoritas()
+    {
+        return $this->hasMany(RutaFavorita::class);
+    }
+
+    public function PerfilPasajero()
+    {
+        return $this->hasOne(PerfilPasajero::class);
     }
 }
+

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('taxis', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('driver_id')->constrained()->onDelete('cascade');
+            $table->foreignId('conductor_id')->constrained()->onDelete('cascade');
             $table->string('plate')->unique();
             $table->string('model');
             $table->integer('capacity');
@@ -31,3 +31,4 @@ return new class extends Migration
         Schema::dropIfExists('taxis');
     }
 };
+

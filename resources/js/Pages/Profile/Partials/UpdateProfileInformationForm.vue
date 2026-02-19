@@ -9,16 +9,16 @@ defineProps({
     mustVerifyEmail: {
         type: Boolean,
     },
-    status: {
+    estado: {
         type: String,
     },
 });
 
-const user = usePage().props.auth.user;
+const usuario = usePage().props.auth.usuario;
 
 const form = useForm({
-    name: user.name,
-    email: user.email,
+    name: usuario.name,
+    email: usuario.email,
 });
 </script>
 
@@ -30,12 +30,12 @@ const form = useForm({
             </h2>
 
             <p class="mt-1 text-sm text-gray-600">
-                Update your account's profile information and email address.
+                Update your account's perfil information and email address.
             </p>
         </header>
 
         <form
-            @submit.prevent="form.patch(route('profile.update'))"
+            @submit.prevent="form.patch(route('perfil.update'))"
             class="mt-6 space-y-6"
         >
             <div>
@@ -69,7 +69,7 @@ const form = useForm({
                 <InputError class="mt-2" :message="form.errors.email" />
             </div>
 
-            <div v-if="mustVerifyEmail && user.email_verified_at === null">
+            <div v-if="mustVerifyEmail && usuario.email_verified_at === null">
                 <p class="mt-2 text-sm text-gray-800">
                     Your email address is unverified.
                     <Link
@@ -83,7 +83,7 @@ const form = useForm({
                 </p>
 
                 <div
-                    v-show="status === 'verification-link-sent'"
+                    v-show="estado === 'verification-link-sent'"
                     class="mt-2 text-sm font-medium text-green-600"
                 >
                     A new verification link has been sent to your email address.
@@ -94,9 +94,9 @@ const form = useForm({
                 <PrimaryButton :disabled="form.processing">Save</PrimaryButton>
 
                 <Transition
-                    enter-active-class="transition ease-in-out"
+                    enter-activo-class="transition ease-in-out"
                     enter-from-class="opacity-0"
-                    leave-active-class="transition ease-in-out"
+                    leave-activo-class="transition ease-in-out"
                     leave-to-class="opacity-0"
                 >
                     <p

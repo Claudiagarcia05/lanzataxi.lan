@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\Driver;
+use App\Models\conductor;
 use App\Models\Taxi;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -16,7 +16,7 @@ class TaxiFactory extends Factory
     public function definition(): array
     {
         return [
-            'driver_id' => Driver::factory(),
+            'conductor_id' => conductor::factory(),
             'plate' => $this->faker->unique()->bothify('####-???'),
             'model' => $this->faker->word(),
             'capacity' => 4,
@@ -25,3 +25,4 @@ class TaxiFactory extends Factory
         ];
     }
 }
+

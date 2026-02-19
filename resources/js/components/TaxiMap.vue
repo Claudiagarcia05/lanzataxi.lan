@@ -1,117 +1,264 @@
 <template>
-  <div class="relative">
-    <div ref="mapContainer" class="h-[500px] w-full rounded-xl border border-neutral-volcanic"></div>
-
-    <div class="absolute top-4 right-4 bg-white p-2 rounded-lg shadow-lg space-y-2">
-      <button @click="centerOnUser" class="btn-secondary p-2" aria-label="Center on user">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      </button>
-    </div>
-
-    <div v-if="activeTrip" class="absolute bottom-4 left-4 right-4 bg-white p-4 rounded-lg shadow-lg">
-      <div class="flex justify-between items-center">
-        <div>
-          <h3 class="font-semibold text-neutral-dark">Viaje activo</h3>
-          <p class="text-sm text-neutral-slate">Destino: {{ activeTrip.dropoff_address }}</p>
-          <p v-if="driverLocation" class="text-sm text-success-jable">
-            Taxi a {{ distance }} metros - {{ time }} min
-          </p>
-        </div>
-        <span :class="statusClass" class="px-3 py-1 rounded-full text-sm">
-          {{ tripStatus }}
-        </span>
+  <div class="taxi-map">
+    <div class="map-container" ref="mapContainer"></div>
+    <div class="map-overlay">
+      <div class="taxi-count">
+        <span class="count-badge">{{ nearbyTaxis.length }}</span>
+        <span class="count-label">Taxis disponibles</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+import { ref, onMounted, watch, onUnmounted } from 'vue'
+import axios from 'axios'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 
 const props = defineProps({
-  center: { type: Array, default: () => [28.963, -13.55] },
-  zoom: { type: Number, default: 13 },
-  markers: { type: Array, default: () => [] },
-  activeTrip: { type: Object, default: null },
-  driverLocation: { type: Object, default: null },
-});
+  pickupLat: Number,
+  pickupLng: Number,
+  dropoffLat: Number,
+  dropoffLng: Number,
+  radius: {
+    type: Number,
+    default: 5
+  }
+})
 
-const mapContainer = ref(null);
-let map;
-let driverMarker;
+const nearbyTaxis = ref([])
+const mapContainer = ref(null)
+let map = null
+let markers = {
+  pickup: null,
+  dropoff: null,
+  taxis: []
+}
+let routeLine = null
 
-const tripStatus = computed(() => props.activeTrip?.status ?? '');
-const statusClass = computed(() => {
-  const status = props.activeTrip?.status;
+// Iconos personalizados
+const pickupIcon = L.divIcon({
+  className: 'custom-marker',
+  html: '<div style="font-size: 28px;">ðŸ“</div>',
+  iconSize: [30, 30],
+  iconAnchor: [15, 30]
+})
 
-  if (status === 'pending') return 'bg-yellow-100 text-yellow-800';
-  if (status === 'accepted') return 'bg-blue-100 text-blue-800';
-  if (status === 'in_progress') return 'bg-purple-100 text-purple-800';
-  if (status === 'completed') return 'bg-green-100 text-green-800';
-  if (status === 'cancelled') return 'bg-red-100 text-red-800';
-  return 'bg-neutral-100 text-neutral-700';
-});
+const dropoffIcon = L.divIcon({
+  className: 'custom-marker',
+  html: '<div style="font-size: 28px;">ðŸŽ¯</div>',
+  iconSize: [30, 30],
+  iconAnchor: [15, 30]
+})
 
-const distance = computed(() => {
-  if (!props.activeTrip?.distance) return 0;
-  return Math.round(props.activeTrip.distance * 1000);
-});
+const taxiIcon = L.divIcon({
+  className: 'custom-marker',
+  html: '<div style="font-size: 24px;">ðŸš–</div>',
+  iconSize: [30, 30],
+  iconAnchor: [15, 15]
+})
 
-const time = computed(() => {
-  if (!props.activeTrip?.distance) return 0;
-  return Math.max(1, Math.round(props.activeTrip.distance * 3));
-});
+const initMap = () => {
+  if (map) return
 
-onMounted(() => {
-  map = L.map(mapContainer.value).setView(props.center, props.zoom);
+  // Coordenadas por defecto: Arrecife, Lanzarote
+  const defaultLat = props.pickupLat || 28.9633
+  const defaultLng = props.pickupLng || -13.5475
+
+  map = L.map(mapContainer.value).setView([defaultLat, defaultLng], 13)
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors',
-  }).addTo(map);
+    attribution: 'Â© OpenStreetMap contributors',
+    maxZoom: 19
+  }).addTo(map)
 
-  props.markers.forEach((marker) => {
-    L.marker([marker.lat, marker.lng]).bindPopup(marker.popup).addTo(map);
-  });
-});
+  updateMarkers()
+}
 
-watch(
-  () => props.driverLocation,
-  (newLocation) => {
-    if (newLocation && map) {
-      if (driverMarker) {
-        driverMarker.setLatLng([newLocation.lat, newLocation.lng]);
-      } else {
-        const taxiIcon = L.divIcon({
-          html: '🚕',
-          className: 'text-2xl',
-          iconSize: [30, 30],
-        });
-        driverMarker = L.marker([newLocation.lat, newLocation.lng], { icon: taxiIcon })
-          .bindPopup('Taxi asignado')
-          .addTo(map);
-      }
-      map.panTo([newLocation.lat, newLocation.lng]);
-    }
-  },
-);
+const updateMarkers = () => {
+  if (!map) return
 
-const centerOnUser = () => {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition((position) => {
-      map.setView([position.coords.latitude, position.coords.longitude], 15);
-    });
+  // Limpiar marcadores existentes
+  if (markers.pickup) map.removeLayer(markers.pickup)
+  if (markers.dropoff) map.removeLayer(markers.dropoff)
+  if (routeLine) map.removeLayer(routeLine)
+  markers.taxis.forEach(m => map.removeLayer(m))
+  markers.taxis = []
+
+  const bounds = []
+
+  // Marcador de origen
+  if (props.pickupLat && props.pickupLng) {
+    markers.pickup = L.marker([props.pickupLat, props.pickupLng], { icon: pickupIcon })
+      .addTo(map)
+      .bindPopup('Punto de recogida')
+    bounds.push([props.pickupLat, props.pickupLng])
   }
-};
+
+  // Marcador de destino
+  if (props.dropoffLat && props.dropoffLng) {
+    markers.dropoff = L.marker([props.dropoffLat, props.dropoffLng], { icon: dropoffIcon })
+      .addTo(map)
+      .bindPopup('Destino')
+    bounds.push([props.dropoffLat, props.dropoffLng])
+
+    // Dibujar lÃ­nea de ruta
+    if (props.pickupLat && props.pickupLng) {
+      routeLine = L.polyline([
+        [props.pickupLat, props.pickupLng],
+        [props.dropoffLat, props.dropoffLng]
+      ], {
+        color: '#0EA5E9',
+        weight: 3,
+        opacity: 0.7,
+        dashArray: '10, 10'
+      }).addTo(map)
+    }
+  }
+
+  // Marcadores de taxis
+  nearbyTaxis.value.forEach(taxi => {
+    if (taxi.lat && taxi.lng) {
+      const marker = L.marker([taxi.lat, taxi.lng], { icon: taxiIcon })
+        .addTo(map)
+        .bindPopup(`<b>${taxi.conductor_name}</b><br>${taxi.distance} km`)
+      markers.taxis.push(marker)
+      bounds.push([taxi.lat, taxi.lng])
+    }
+  })
+
+  // Ajustar vista para mostrar todos los marcadores
+  if (bounds.length > 0) {
+    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 })
+  }
+}
+
+const fetchNearbyTaxis = async () => {
+  try {
+    const response = await axios.get('/api/nearby-conductors', {
+      params: {
+        lat: props.pickupLat,
+        lng: props.pickupLng,
+        radius: props.radius
+      }
+    })
+    nearbyTaxis.value = response.data
+    updateMarkers()
+  } catch (error) {
+    console.error('Error al cargar taxis cercanos:', error)
+    // Datos de demostraciÃ³n cerca de Arrecife, Lanzarote
+    nearbyTaxis.value = [
+      { id: 1, conductor_name: 'Juan P.', distance: 1.2, lat: 28.9650, lng: -13.5450 },
+      { id: 2, conductor_name: 'MarÃ­a G.', distance: 2.5, lat: 28.9600, lng: -13.5500 },
+      { id: 3, conductor_name: 'Carlos R.', distance: 3.1, lat: 28.9680, lng: -13.5420 }
+    ]
+    updateMarkers()
+  }
+}
+
+watch([() => props.pickupLat, () => props.pickupLng, () => props.dropoffLat, () => props.dropoffLng], () => {
+  if (map) {
+    updateMarkers()
+  }
+  if (props.pickupLat && props.pickupLng) {
+    fetchNearbyTaxis()
+  }
+})
+
+onMounted(() => {
+  setTimeout(() => {
+    initMap()
+    if (props.pickupLat && props.pickupLng) {
+      fetchNearbyTaxis()
+    }
+  }, 100)
+})
+
+onUnmounted(() => {
+  if (map) {
+    map.remove()
+    map = null
+  }
+})
 </script>
+
+<style scoped>
+.taxi-map {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.map-container {
+  width: 100%;
+  height: 400px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1;
+}
+
+.map-overlay {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.taxi-count {
+  background: white;
+  padding: 12px 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.count-badge {
+  background: linear-gradient(135deg, #0066CC 0%, #0052A3 100%);
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.count-label {
+  font-size: 13px;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+/* Estilos para marcadores personalizados */
+:deep(.custom-marker) {
+  background: transparent;
+  border: none;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* Estilos para popups de Leaflet */
+:deep(.leaflet-popup-content-wrapper) {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+:deep(.leaflet-popup-content) {
+  margin: 12px 16px;
+  font-family: inherit;
+}
+</style>
+
+

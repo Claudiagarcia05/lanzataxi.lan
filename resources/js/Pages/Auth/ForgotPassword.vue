@@ -7,7 +7,7 @@ import TextInput from '@/Components/TextInput.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 
 defineProps({
-    status: {
+    estado: {
         type: String,
     },
 });
@@ -32,10 +32,10 @@ const submit = () => {
         </div>
 
         <div
-            v-if="status"
+            v-if="estado"
             class="mb-4 text-sm font-medium text-green-600"
         >
-            {{ status }}
+            {{ estado }}
         </div>
 
         <form @submit.prevent="submit">
