@@ -15,6 +15,10 @@ jobs:
           php-version: '8.2'
       - name: Install Dependencies
         run: composer install --no-progress
+      - name: Prepare Testing Environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
       - name: Run Tests
         run: php artisan test
 
