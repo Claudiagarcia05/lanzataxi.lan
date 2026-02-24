@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\viaje;
+use App\Models\Viaje;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class ViajeFactory extends Factory
 {
-    protected $model = viaje::class;
+    protected $model = Viaje::class;
 
     public function definition(): array
     {

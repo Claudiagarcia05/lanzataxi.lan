@@ -12,8 +12,10 @@ use App\Http\Controllers\Api\RutaFavoritaController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\WalletController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 
-// Rutas pÃƒÂºblicas
+// Rutas públicas
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/available-taxis', [TaxiController::class, 'available']);
@@ -34,6 +36,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Cartera virtual
     Route::get('/wallet/balance', [WalletController::class, 'getBalance']);
+    Route::get('/wallet/debts', [WalletController::class, 'getDebtSummary']);
     Route::get('/wallet/transactions', [WalletController::class, 'getTransactions']);
     Route::post('/wallet/add', [WalletController::class, 'addFunds']);
     Route::post('/wallet/use', [WalletController::class, 'useFunds']);
@@ -61,14 +64,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/viajes/{viaje}/rate', [ViajeController::class, 'rate']);
 
     // Taxistas
+    // Las siguientes rutas están disponibles para cualquier usuario autenticado (para pruebas)
+    Route::get('/conductor/profile', [ConductorController::class, 'profile']);
+    Route::get('/conductor/status', [ConductorController::class, 'status']);
+    // El resto sigue protegido por role:conductor
     Route::middleware('role:conductor')->group(function () {
-        Route::get('/conductor/profile', [ConductorController::class, 'profile']);
         Route::get('/conductor/viajes', [ViajeController::class, 'driverTrips']);
         Route::patch('/viajes/{viaje}/accept', [ViajeController::class, 'accept']);
         Route::patch('/viajes/{viaje}/start', [ViajeController::class, 'start']);
         Route::patch('/viajes/{viaje}/complete', [ViajeController::class, 'complete']);
         Route::post('/conductor/ubicacion', [UbicacionController::class, 'update']);
-        Route::get('/conductor/status', [ConductorController::class, 'status']);
         Route::patch('/conductor/status', [ConductorController::class, 'updateStatus']);
     });
 

@@ -13,12 +13,12 @@ class Taxi extends Model
 
     public function conductor()
     {
-        return $this->belongsTo(conductor::class);
+        return $this->belongsTo(Conductor::class);
     }
 
     public function viajes()
     {
-        return $this->hasMany(viaje::class);
+        return $this->hasMany(Viaje::class);
     }
 }
 

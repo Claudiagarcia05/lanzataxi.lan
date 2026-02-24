@@ -10,7 +10,7 @@ class ubicacion extends Model
 
     public function conductor()
     {
-        return $this->belongsTo(conductor::class);
+        return $this->belongsTo(Conductor::class);
     }
 }
 

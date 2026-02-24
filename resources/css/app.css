@@ -34,3 +34,7 @@
 .high-contrast .text-white\/80 {
 	color: #ffffff;
 }
+
+section {
+  scroll-margin-top: 80px;
+}

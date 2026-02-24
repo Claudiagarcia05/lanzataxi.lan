@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class PerfilPasajero extends Model
 {
+    protected $table = 'perfiles_pasajero';
+
     protected $fillable = [
         'user_id',
         'avatar',

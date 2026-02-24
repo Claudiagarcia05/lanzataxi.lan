@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\conductor;
+use App\Models\Conductor;
 use Illuminate\Http\Request;
 
 class ConductorController extends Controller
@@ -16,7 +16,8 @@ class ConductorController extends Controller
             return response()->json(['message' => 'conductor profile not found'], 404);
         }
 
-        return response()->json($conductor->load('user:id,name,email,phone'));
+        // Incluir avatar en la relación user
+        return response()->json($conductor->load(['user:id,name,email,phone,avatar']));
     }
 
     public function index()
@@ -111,7 +112,7 @@ class ConductorController extends Controller
 
         try {
             // Por ahora devolvemos conductors activos
-            // En producciÃƒÂ³n, implementar cÃƒÂ¡lculo de distancia real con geolocalizaciÃƒÂ³n
+            // En producción, implementar cálculo de distancia real con geolocalización
             $conductors = conductor::with(['user:id,name', 'taxi:id,conductor_id,plate,model,status'])
                 ->where('is_active', true)
                 ->whereHas('user') // Asegurar que tenga usuario
@@ -121,7 +122,7 @@ class ConductorController extends Controller
                 ->limit(10)
                 ->get()
                 ->filter(function ($conductor) {
-                    // Filtrar conductors que tengan user y taxi vÃƒÂ¡lidos
+                    // Filtrar conductores que tengan user y taxi válidos
                     return $conductor->user && $conductor->taxi;
                 })
                 ->map(function ($conductor) {
@@ -134,7 +135,7 @@ class ConductorController extends Controller
                         'distance' => round(rand(5, 50) / 10, 1), // Simulado para demo
                     ];
                 })
-                ->values(); // Re-indexar array despuÃƒÂ©s del filtro
+                ->values(); // Re-indexar array después del filtro
 
             return response()->json($conductors);
         } catch (\Exception $e) {

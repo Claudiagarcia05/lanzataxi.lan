@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\pago;
-use App\Models\viaje;
+use App\Models\Viaje;
 use Illuminate\Http\Request;
 
 class PagoController extends Controller
@@ -49,7 +49,7 @@ class PagoController extends Controller
         $pago = $viaje->pago;
 
         if (!$pago) {
-            return response()->json(['message' => 'No se encontrÃƒÂ³ pago para este viaje'], 404);
+            return response()->json(['message' => 'No se encontró pago para este viaje'], 404);
         }
 
         return response()->json($pago);
@@ -62,12 +62,12 @@ class PagoController extends Controller
             'amount' => 'required|numeric|min:0',
         ]);
 
-        // AquÃƒÂ­ irÃƒÂ­a la integraciÃƒÂ³n real con stripe
+        // Aquí iría la integración real con stripe
         // Por ahora simulamos el proceso
         
         try {
             // Simular procesamiento de pago
-            // En producciÃƒÂ³n: \stripe\pagoIntent::create([...])
+            // En producción: \stripe\pagoIntent::create([...])
             
             $pago = pago::create([
                 'viaje_id' => $viaje->id,
@@ -97,7 +97,7 @@ class PagoController extends Controller
             'amount' => 'required|numeric|min:0',
         ]);
 
-        // AquÃƒÂ­ irÃƒÂ­a la integraciÃƒÂ³n real con PayPal
+        // Aquí iría la integración real con PayPal
         // Por ahora simulamos el proceso
         
         try {

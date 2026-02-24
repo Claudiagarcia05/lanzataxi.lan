@@ -10,11 +10,27 @@ class RutaFavoritaController extends Controller
 {
     public function index(Request $solicitud)
     {
-        $favorites = $solicitud->user()->RutaFavoritas()
-            ->orderBy('order')
-            ->get();
+        try {
+            // Verificar que el usuario está autenticado
+            if (!$solicitud->user()) {
+                return response()->json(['error' => 'Usuario no autenticado'], 401);
+            }
 
-        return response()->json($favorites);
+            $usuario = $solicitud->user();
+            
+            // Obtener favoritos del usuario
+            $favorites = $usuario->rutaFavoritas()
+                ->orderBy('order')
+                ->get();
+
+            return response()->json($favorites);
+        } catch (\Exception $e) {
+            \Log::error('Error al cargar favoritos: ' . $e->getMessage(), [
+                'exception' => $e,
+                'user_id' => $solicitud->user()?->id,
+            ]);
+            return response()->json(['error' => 'Error al cargar favoritos'], 500);
+        }
     }
 
     public function store(Request $solicitud)
@@ -26,9 +42,9 @@ class RutaFavoritaController extends Controller
             'lng' => 'required|numeric',
         ]);
 
-        $maxOrder = $solicitud->user()->RutaFavoritas()->max('order') ?? -1;
+        $maxOrder = $solicitud->user()->rutaFavoritas()->max('order') ?? -1;
 
-        $favorite = $solicitud->user()->RutaFavoritas()->create([
+        $favorite = $solicitud->user()->rutaFavoritas()->create([
             ...$validated,
             'order' => $maxOrder + 1,
         ]);

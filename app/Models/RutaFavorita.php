@@ -2,10 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class RutaFavorita extends Model
 {
+    use HasFactory;
+
+    protected $table = 'rutas_favoritas';
+
     protected $fillable = [
         'user_id',
         'name',

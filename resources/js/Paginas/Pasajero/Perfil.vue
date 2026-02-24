@@ -326,10 +326,6 @@
               <input type="checkbox" v-model="preferences.sms_notifications" class="w-4 h-4 text-lanzarote-blue">
               <span class="text-neutral-dark">Recibir notificaciones por SMS</span>
             </label>
-            <label class="flex items-center space-x-3">
-              <input type="checkbox" v-model="preferences.marketing_emails" class="w-4 h-4 text-lanzarote-blue">
-              <span class="text-neutral-dark">Recibir ofertas y promociones</span>
-            </label>
           </div>
         </div>
 
@@ -817,4 +813,3 @@ onMounted(async () => {
   }
 })
 </script>
-

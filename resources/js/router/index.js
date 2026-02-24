@@ -1,18 +1,18 @@
 import { createRouter, createWebHistory } from 'vue-router';
-const Home = () => import('../Pages/Home.vue');
-const Login = () => import('../views/Login.vue');
-const Register = () => import('../views/Register.vue');
-const PanelPasajero = () => import('../Pages/pasajero/Dashboard.vue');
-const conductorDashboard = () => import('../Pages/conductor/Dashboard.vue');
-const AdminDashboard = () => import('../Pages/Admin/Dashboard.vue');
+const Home = () => import('../Paginas/Inicio.vue');
+const Login = () => import('../Paginas/Autenticacion/IniciarSesion.vue');
+const Register = () => import('../Paginas/Autenticacion/Registrar.vue');
+const PanelPasajero = () => import('../Paginas/Pasajero/Panel.vue');
+// const AdminDashboard = () => import('../Paginas/Admin/Dashboard.vue'); // No existe, comentar o crear si es necesario
 import { useAuthStore } from '../stores/authStore';
 
 const routes = [
-  {
-    path: '/',
-    name: 'home',
-    component: Home,
-  },
+    {
+      path: '/conductor/perfil',
+      name: 'conductor-perfil',
+      component: () => import('../Paginas/Conductor/Perfil.vue'),
+      meta: { requiresAuth: true }
+    },
   {
     path: '/login',
     name: 'login',
@@ -28,6 +28,12 @@ const routes = [
     name: 'pasajero-dashboard',
     component: PanelPasajero,
     meta: { requiresAuth: true },
+  },
+  {
+    path: '/dashboard/seguimiento/:id',
+    name: 'pasajero.seguimiento',
+    component: () => import('../Pages/Pasajero/PasajeroSeguimiento.vue'),
+    meta: { requiresAuth: true, role: 'pasajero' }
   },
   {
     path: '/conductor/dashboard',
@@ -48,21 +54,21 @@ const router = createRouter({
   routes,
 });
 
-// Guard global para verificar autenticaciÃ³n
+// Guard global para verificar autenticación
 router.beforeEach(async (to, from, next) => {
   const auth = useAuthStore();
 
-  // Inicializar autenticaciÃ³n si aÃºn no se ha hecho
+  // Inicializar autenticación si aún no se ha hecho
   if (!auth.initialized) {
     await auth.checkAuth();
   }
 
-  // Si la ruta requiere autenticaciÃ³n y no estÃ¡ autenticado
+  // Si la ruta requiere autenticación y no está autenticado
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     return { path: '/login' };
   }
 
-  // Si estÃ¡ autenticado y trata de ir a login o register, redirigir al dashboard segÃºn su rol
+  // Si está autenticado y trata de ir a login o register, redirigir al dashboard según su rol
   if (auth.isAuthenticated && (to.path === '/login' || to.path === '/register')) {
     const dashboardRoute = auth.getDashboardRoute();
     return { path: dashboardRoute };

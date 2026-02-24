@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\conductor;
+use App\Models\Conductor;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class ConductorFactory extends Factory
 {
-    protected $model = conductor::class;
+    protected $model = Conductor::class;
 
     public function definition(): array
     {

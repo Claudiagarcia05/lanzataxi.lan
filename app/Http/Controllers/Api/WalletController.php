@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Debt;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -31,13 +32,29 @@ class WalletController extends Controller
     {
         $usuario = Auth::user();
         
-        // En producciÃƒÂ³n, esto vendrÃƒÂ­a de una tabla wallet_transactions
-        // Por ahora devolvemos un array vacÃƒÂ­o para usuarios nuevos
+        // En producción, esto vendría de una tabla wallet_transactions
+        // Por ahora devolvemos un array vacío para usuarios nuevos
         return response()->json([]);
     }
 
     /**
-     * AÃƒÂ±adir fondos a la cartera
+     * Obtener deuda pendiente
+     */
+    public function getDebtSummary()
+    {
+        $usuario = Auth::user();
+        $pendingDebt = Debt::where('user_id', $usuario->id)
+            ->where('status', 'pending')
+            ->sum('amount');
+
+        return response()->json([
+            'pending_debt' => floatval($pendingDebt),
+            'currency' => 'EUR'
+        ]);
+    }
+
+    /**
+     * Añadir fondos a la cartera
      */
     public function addFunds(Request $solicitud)
     {
@@ -57,7 +74,7 @@ class WalletController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Saldo aÃƒÂ±adido correctamente',
+            'message' => 'Saldo añadido correctamente',
             'new_balance' => $newBalance,
             'transaction' => [
                 'id' => rand(1000, 9999),

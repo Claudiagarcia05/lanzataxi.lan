@@ -28,7 +28,7 @@ class AuthController extends Controller
             'wallet_balance' => 0,
         ]);
 
-        // Crear token para autenticar automÃƒÂ¡ticamente
+        // Crear token para autenticar automáticamente
         $token = $usuario->createToken('api')->plainTextToken;
 
         return response()->json([
@@ -57,7 +57,7 @@ class AuthController extends Controller
 
         if (!$usuario || !Hash::check($validated['password'], $usuario->password)) {
             return response()->json([
-                'message' => 'Credenciales invÃƒÂ¡lidas. Por favor verifica tu email y contraseÃƒÂ±a.',
+                'message' => 'Credenciales inválidas. Por favor verifica tu email y contraseña.',
                 'errors' => [
                     'email' => ['Las credenciales proporcionadas no coinciden con nuestros registros.']
                 ]
@@ -85,7 +85,7 @@ class AuthController extends Controller
                 'avatar' => $usuario->avatar,
                 'wallet_balance' => $usuario->wallet_balance ?? 0,
             ],
-            'message' => 'Inicio de sesiÃƒÂ³n exitoso'
+            'message' => 'Inicio de sesión exitoso'
         ]);
     }
 
@@ -96,9 +96,13 @@ class AuthController extends Controller
 
     public function logout(Request $solicitud)
     {
-        $solicitud->user()->currentAccessToken()?->delete();
 
-        return response()->json(['message' => 'SesiÃƒÂ³n cerrada']);
+        $token = $solicitud->user()->currentAccessToken();
+        if ($token && $token instanceof \Laravel\Sanctum\PersonalAccessToken) {
+            $token->delete();
+        }
+
+        return response()->json(['message' => 'Sesión cerrada']);
     }
 }
 

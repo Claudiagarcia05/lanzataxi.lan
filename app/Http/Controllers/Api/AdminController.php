@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\conductor;
+use App\Models\Conductor;
 use App\Models\Taxi;
-use App\Models\viaje;
+use App\Models\Viaje;
 use App\Models\User;
 
 class AdminController extends Controller

@@ -3,15 +3,79 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\viaje;
+use App\Models\Viaje;
+use App\Models\Debt;
 use Illuminate\Http\Request;
 
 class ViajeController extends Controller
 {
+    /**
+     * Calcula el precio del viaje según origen, destino, distancia, hora y tarifas fijas.
+     */
+    private function calcularPrecio($origen, $destino, $distance, $hora = null)
+    {
+        // Municipios principales
+        $municipios = [
+            'Arrecife', 'Puerto del Carmen', 'Costa Teguise', 'Playa Blanca', 'Haria', 'Teguise', 'Aeropuerto', 'Puerto Calero'
+        ];
+
+        // Trayectos fijos (día/noche)
+        $trayectosFijos = [
+            ['Aeropuerto', 'Arrecife', 10, 14],
+            ['Aeropuerto', 'Puerto del Carmen', 12, 18],
+            ['Aeropuerto', 'Costa Teguise', 20, 24],
+            ['Arrecife', 'Playa Blanca', 45, 50],
+            ['Puerto Calero', 'Aeropuerto', 45.86, null],
+        ];
+
+        // Determinar si es noche (22:00-06:00)
+        $isNoche = false;
+        if ($hora) {
+            $h = is_string($hora) ? date('H', strtotime($hora)) : $hora->format('H');
+            $isNoche = ($h >= 22 || $h < 6);
+        }
+
+        // Normalizar nombres
+        $origen = ucfirst(strtolower($origen));
+        $destino = ucfirst(strtolower($destino));
+
+        // Buscar trayecto fijo
+        foreach ($trayectosFijos as $t) {
+            if ((($t[0] === $origen && $t[1] === $destino) || ($t[1] === $origen && $t[0] === $destino))) {
+                if ($isNoche && $t[3]) return $t[3];
+                return $t[2];
+            }
+        }
+
+        // Si es dentro de Arrecife
+        if ($origen === 'Arrecife' && $destino === 'Arrecife') {
+            $bajada = $isNoche ? 3.65 : 3.05;
+            $precioKm = $isNoche ? 0.92 : 0.80;
+            return round($bajada + ($distance * $precioKm), 2);
+        }
+
+        // Si uno de los dos es Arrecife, aplicar tarifa Arrecife
+        if ($origen === 'Arrecife' || $destino === 'Arrecife') {
+            $bajada = $isNoche ? 3.65 : 3.05;
+            $precioKm = $isNoche ? 0.92 : 0.80;
+            return round($bajada + ($distance * $precioKm), 2);
+        }
+
+        // Otros municipios
+        $bajada = 3.50;
+        $precioKm = 1.10;
+        return round($bajada + ($distance * $precioKm), 2);
+    }
     public function userviajes(Request $solicitud)
     {
-        $viajes = $solicitud->user()->viajesAspasajero()
-            ->with(['pasajero:id,name', 'conductor.user:id,name', 'taxi:id,plate,model', 'pago'])
+        $user = $solicitud->user();
+        $viajes = $user->viajesAspasajero()
+            ->with([
+                'pasajero:id,name,email',
+                'conductor.user:id,name',
+                'taxi:id,plate,model',
+                'pago'
+            ])
             ->latest()
             ->get();
 
@@ -44,14 +108,39 @@ class ViajeController extends Controller
             'pickup_address' => 'nullable|string|max:255',
             'dropoff_address' => 'nullable|string|max:255',
             'distance' => 'nullable|numeric|min:0',
-            'scheduled_for' => 'nullable|date',
-            'pasajeros' => 'nullable|integer|min:1|max:4',
+            'scheduled_for' => 'nullable|date_format:Y-m-d H:i',
+            'pasajeros' => 'nullable|integer|min:1|max:6',
             'luggage' => 'nullable|integer|min:0|max:10',
-            'pago_method' => 'nullable|string|in:cash,card,app',
+            'pago_method' => 'nullable|string|in:efectivo,wallet,tarjeta',
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        $viaje = viaje::create([
+
+
+        // Municipios principales (debe estar definido antes de usarse en $getMunicipio)
+        $municipios = [
+            'Arrecife', 'Puerto del Carmen', 'Costa Teguise', 'Playa Blanca', 'Haria', 'Teguise', 'Aeropuerto', 'Puerto Calero'
+        ];
+
+        // Extraer municipio de origen y destino (simplificado: primer municipio en la dirección)
+        $origen = $validated['pickup_address'] ?? 'Arrecife';
+        $destino = $validated['dropoff_address'] ?? 'Arrecife';
+        $distance = $validated['distance'] ?? 5.5;
+        $hora = $validated['scheduled_for'] ?? now();
+
+        // Intentar extraer municipio de la dirección (mejorable con geocoding real)
+        $getMunicipio = function($direccion) use ($municipios) {
+            foreach ($municipios as $m) {
+                if (stripos($direccion, $m) !== false) return $m;
+            }
+            return 'Arrecife';
+        };
+        $mun_origen = $getMunicipio($origen);
+        $mun_destino = $getMunicipio($destino);
+
+        $precio = $this->calcularPrecio($mun_origen, $mun_destino, $distance, $hora);
+
+        $viaje = Viaje::create([
             'pasajero_id' => $solicitud->user()->id,
             'pickup_lat' => $validated['pickup_lat'],
             'pickup_lng' => $validated['pickup_lng'],
@@ -62,25 +151,38 @@ class ViajeController extends Controller
             'scheduled_for' => $validated['scheduled_for'] ?? null,
             'pasajeros' => $validated['pasajeros'] ?? 1,
             'luggage' => $validated['luggage'] ?? 0,
-            'pago_method' => $validated['pago_method'] ?? 'cash',
+            'pago_method' => $this->mapPaymentMethod($validated['pago_method'] ?? 'efectivo'),
             'notes' => $validated['notes'] ?? null,
             'status' => 'pending',
+            'distance' => $distance,
+            'price' => $precio,
         ]);
 
-        $viaje->distance = $validated['distance'] ?? 5.5;
-        $viaje->price = $viaje->distance * 1.2;
         $viaje->co2_saved = $viaje->calculateCO2Saved();
         $viaje->save();
+
+        $pendingDebt = Debt::where('user_id', $viaje->pasajero_id)
+            ->where('status', 'pending')
+            ->sum('amount');
+
+        if ($pendingDebt > 0) {
+            $viaje->price += $pendingDebt;
+            $viaje->save();
+
+            Debt::where('user_id', $viaje->pasajero_id)
+                ->where('status', 'pending')
+                ->update(['status' => 'paid']);
+        }
 
         return response()->json($viaje->load(['pasajero:id,name', 'conductor.user:id,name', 'taxi:id,plate,model', 'pago']), 201);
     }
 
-    public function show(viaje $viaje)
+    public function show(Viaje $viaje)
     {
         return response()->json($viaje->load(['pasajero:id,name', 'conductor.user:id,name', 'taxi:id,plate,model', 'pago']));
     }
 
-    public function cancel(viaje $viaje)
+    public function cancel(Viaje $viaje)
     {
         if ($viaje->pasajero_id !== auth()->id()) {
             return response()->json(['message' => 'No autorizado'], 403);
@@ -90,12 +192,34 @@ class ViajeController extends Controller
             return response()->json(['message' => 'viaje cannot be cancelled'], 400);
         }
 
+        $user = auth()->user();
+        $tripPrice = $viaje->price ?? 0;
+        $currentBalance = $user->wallet_balance ?? 0;
+
+        // Cambiar estado a cancelado
         $viaje->update(['status' => 'cancelled']);
+
+        if ($currentBalance >= $tripPrice) {
+            $user->wallet_balance = $currentBalance - $tripPrice;
+            $user->save();
+        } else {
+            $debtAmount = $tripPrice - $currentBalance;
+            $user->wallet_balance = 0;
+            $user->save();
+
+            Debt::create([
+                'user_id' => $user->id,
+                'trip_id' => $viaje->id,
+                'amount' => $debtAmount,
+                'status' => 'pending',
+                'reason' => 'Cancelación de viaje - Cobro total'
+            ]);
+        }
 
         return response()->json($viaje);
     }
 
-    public function track(viaje $viaje)
+    public function track(Viaje $viaje)
     {
         if (!$viaje->conductor) {
             return response()->json(['message' => 'conductor not assigned'], 404);
@@ -116,7 +240,7 @@ class ViajeController extends Controller
         ]);
     }
 
-    public function accept(Request $solicitud, viaje $viaje)
+    public function accept(Request $solicitud, Viaje $viaje)
     {
         if ($viaje->status !== 'pending') {
             return response()->json(['message' => 'viaje not available'], 400);
@@ -137,7 +261,7 @@ class ViajeController extends Controller
         return response()->json($viaje->load(['pasajero:id,name', 'conductor.user:id,name', 'taxi:id,plate,model', 'pago']));
     }
 
-    public function start(Request $solicitud, viaje $viaje)
+    public function start(Request $solicitud, Viaje $viaje)
     {
         $conductor = $solicitud->user()->conductor;
 
@@ -154,7 +278,7 @@ class ViajeController extends Controller
         return response()->json($viaje->fresh(['pasajero:id,name', 'conductor.user:id,name', 'taxi:id,plate,model', 'pago']));
     }
 
-    public function complete(Request $solicitud, viaje $viaje)
+    public function complete(Request $solicitud, Viaje $viaje)
     {
         $conductor = $solicitud->user()->conductor;
 
@@ -184,16 +308,16 @@ class ViajeController extends Controller
     public function reports()
     {
         $data = [
-            'total' => viaje::count(),
-            'completed' => viaje::where('status', 'completed')->count(),
-            'cancelled' => viaje::where('status', 'cancelled')->count(),
-            'revenue' => viaje::where('status', 'completed')->sum('price'),
+            'total' => Viaje::count(),
+            'completed' => Viaje::where('status', 'completed')->count(),
+            'cancelled' => Viaje::where('status', 'cancelled')->count(),
+            'revenue' => Viaje::where('status', 'completed')->sum('price'),
         ];
 
         return response()->json($data);
     }
 
-    public function rate(Request $solicitud, viaje $viaje)
+    public function rate(Request $solicitud, Viaje $viaje)
     {
         if ($viaje->pasajero_id !== $solicitud->user()->id) {
             return response()->json(['message' => 'No autorizado'], 403);
@@ -214,6 +338,23 @@ class ViajeController extends Controller
         ]);
 
         return response()->json($viaje->fresh(['pasajero:id,name', 'conductor.user:id,name', 'taxi:id,plate,model', 'pago']));
+    }
+
+    /**
+     * Normaliza los métodos de pago del frontend a los valores de la base de datos
+     */
+    private function mapPaymentMethod($method)
+    {
+        $map = [
+            'efectivo' => 'cash',
+            'wallet' => 'app',
+            'tarjeta' => 'card',
+            'cash' => 'cash',
+            'card' => 'card',
+            'app' => 'app',
+        ];
+
+        return $map[$method] ?? 'cash';
     }
 }
 

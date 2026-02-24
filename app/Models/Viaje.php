@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class viaje extends Model
+class Viaje extends Model
 {
     use HasFactory;
 
@@ -15,6 +15,7 @@ class viaje extends Model
         'pickup_address', 'dropoff_address',
         'status', 'distance', 'price', 'co2_saved',
         'rating', 'comment', 'end_time',
+        'pasajeros', 'luggage', 'pago_method', 'notes', 'scheduled_for',
     ];
 
     protected $casts = [
@@ -36,7 +37,7 @@ class viaje extends Model
 
     public function conductor()
     {
-        return $this->belongsTo(conductor::class);
+        return $this->belongsTo(Conductor::class);
     }
 
     public function taxi()
@@ -46,7 +47,7 @@ class viaje extends Model
 
     public function pago()
     {
-        return $this->hasOne(pago::class);
+        return $this->hasOne(Pago::class);
     }
 
     // Metodo para calcular CO2 ahorrado

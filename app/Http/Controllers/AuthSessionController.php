@@ -9,7 +9,13 @@ use Laravel\Sanctum\PersonalAccessToken;
 class AuthSessionController extends Controller
 {
     /**
-     * Establecer sesiÃƒÂ³n de Laravel despuÃƒÂ©s del login API
+     * Establecer sesión de Laravel después del login API
+     * 
+     * Flujo:
+     * 1. Modal SPA POST /api/login → obtiene token Sanctum
+     * 2. Modal redirige a /auth/session-login?token=...
+     * 3. Este controlador valida el token y establece sesión web
+     * 4. Redirige al dashboard según el rol del usuario
      */
     public function establishSession(Request $solicitud)
     {
@@ -20,12 +26,11 @@ class AuthSessionController extends Controller
             return redirect('/')->with('error', 'Token requerido');
         }
 
-        // Buscar el token en la tabla de Sanctum (plain token, no hasheado)
-        // El token viene plain desde el cliente, necesito hashearlo para buscar en la BD
-        $personalAccessToken = PersonalAccessToken::whereRaw('token = ?', [hash('sha256', $token)])->first();
+        // Buscar el token usando el helper oficial de Sanctum
+        $personalAccessToken = PersonalAccessToken::findToken($token);
         
         if (!$personalAccessToken) {
-            return redirect('/')->with('error', 'Token invÃƒÂ¡lido');
+            return redirect('/')->with('error', 'Token inválido');
         }
 
         $usuario = $personalAccessToken->tokenable;
@@ -34,14 +39,21 @@ class AuthSessionController extends Controller
             return redirect('/')->with('error', 'Usuario no encontrado');
         }
 
-        // Establecer sesiÃƒÂ³n de Laravel
-        Auth::login($usuario);
+        // Loguear al usuario en el guard web
+        // Laravel's StartSession middleware se encargará de la persistencia
+        Auth::guard('web')->login($usuario, remember: true);
         
-        // Redirigir al dashboard correcto
+        // Log para debugging
+        \Log::info('User authenticated via API token', [
+            'user_id' => $usuario->id,
+            'email' => $usuario->email,
+        ]);
+        
+        // Redirigir al dashboard según el rol
         return redirect(match ($usuario->role) {
             'conductor' => '/conductor/dashboard',
             'admin' => '/admin/dashboard',
-            default => '/dashboard/home',
+            default => '/pasajero/home',
         });
     }
 }

@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class conductor extends Model
+class Conductor extends Model
 {
     use HasFactory;
 
@@ -28,7 +28,7 @@ class conductor extends Model
 
     public function viajes()
     {
-        return $this->hasMany(viaje::class);
+        return $this->hasMany(Viaje::class);
     }
 
     public function ubicacions()

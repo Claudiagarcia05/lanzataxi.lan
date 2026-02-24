@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
-use App\Models\conductor;
-use App\Models\ubicacion;
-use App\Models\pago;
+use App\Models\Conductor;
+use App\Models\Ubicacion;
+use App\Models\Pago;
 use App\Models\Taxi;
-use App\Models\viaje;
+use App\Models\Viaje;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -48,7 +48,7 @@ class DatabaseSeeder extends Seeder
             'phone' => '+34 600 333 333',
         ]);
 
-        $conductor = conductor::updateOrCreate([
+        $conductor = Conductor::updateOrCreate([
             'user_id' => $conductorUser->id,
         ], [
             'license_number' => 'LIC-123456',
@@ -66,7 +66,7 @@ class DatabaseSeeder extends Seeder
             'status' => 'available',
         ]);
 
-        $completedviaje = viaje::updateOrCreate([
+        $completedviaje = Viaje::updateOrCreate([
             'pasajero_id' => $pasajero->id,
             'conductor_id' => $conductor->id,
             'taxi_id' => $taxi->id,
@@ -86,10 +86,10 @@ class DatabaseSeeder extends Seeder
             'end_time' => now()->subHour(),
         ]);
 
-        viaje::updateOrCreate([
+        Viaje::updateOrCreate([
             'pasajero_id' => $pasajero->id,
             'pickup_address' => 'Teguise',
-            'dropoff_address' => 'Aeropuerto CÃƒÂ©sar Manrique',
+            'dropoff_address' => 'Aeropuerto César Manrique',
         ], [
             'pickup_lat' => 29.060,
             'pickup_lng' => -13.560,
@@ -101,7 +101,7 @@ class DatabaseSeeder extends Seeder
             'co2_saved' => 0.61,
         ]);
 
-        pago::updateOrCreate([
+        Pago::updateOrCreate([
             'viaje_id' => $completedviaje->id,
         ], [
             'amount' => 18.50,
@@ -109,7 +109,7 @@ class DatabaseSeeder extends Seeder
             'status' => 'paid',
         ]);
 
-        ubicacion::updateOrCreate([
+        Ubicacion::updateOrCreate([
             'conductor_id' => $conductor->id,
         ], [
             'lat' => 28.968,

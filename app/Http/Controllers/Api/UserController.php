@@ -14,7 +14,7 @@ class UserController extends Controller
     {
         $usuario = $solicitud->user();
 
-        // Validar solo los campos que se envÃƒÂ­an
+        // Validar solo los campos que se envían
         $rules = [];
         if ($solicitud->has('name')) {
             $rules['name'] = 'string|max:255';
@@ -77,7 +77,7 @@ class UserController extends Controller
         if (!$solicitud->hasFile('avatar')) {
             return response()->json([
                 'success' => false,
-                'message' => 'No se recibiÃƒÂ³ ningÃƒÂºn archivo',
+                'message' => 'No se recibió ningún archivo',
                 'debug' => [
                     'has_file' => $solicitud->hasFile('avatar'),
                     'all_files' => $solicitud->allFiles(),
@@ -92,7 +92,7 @@ class UserController extends Controller
         if (!$file->isValid()) {
             return response()->json([
                 'success' => false,
-                'message' => 'El archivo no es vÃƒÂ¡lido',
+                'message' => 'El archivo no es válido',
                 'error' => $file->getErrorMessage()
             ], 422);
         }
@@ -107,11 +107,11 @@ class UserController extends Controller
             ], 422);
         }
 
-        // Validar tamaÃƒÂ±o (2MB mÃƒÂ¡ximo)
+        // Validar tamaño (2MB máximo)
         if ($file->getSize() > 2048 * 1024) {
             return response()->json([
                 'success' => false,
-                'message' => 'El archivo es demasiado grande (mÃƒÂ¡ximo 2MB)'
+                'message' => 'El archivo es demasiado grande (máximo 2MB)'
             ], 422);
         }
 
@@ -148,7 +148,7 @@ class UserController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'ContraseÃƒÂ±a actualizada correctamente'
+            'message' => 'Contraseña actualizada correctamente'
         ]);
     }
 
@@ -160,7 +160,7 @@ class UserController extends Controller
 
         $usuario = $solicitud->user();
 
-        // Si el usuario tiene perfil de pasajero, actualizar ahÃƒÂ­
+        // Si el usuario tiene perfil de pasajero, actualizar ahí
         if ($usuario->PerfilPasajero) {
             $usuario->PerfilPasajero->update([
                 'preferences' => json_encode($validated['preferences'])

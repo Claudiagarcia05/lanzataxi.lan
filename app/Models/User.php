@@ -54,19 +54,19 @@ class User extends Authenticatable
 
     public function conductor()
     {
-        return $this->hasOne(conductor::class);
+        return $this->hasOne(Conductor::class);
     }
 
     public function viajesAspasajero()
     {
-        return $this->hasMany(viaje::class, 'pasajero_id');
+        return $this->hasMany(Viaje::class, 'pasajero_id');
     }
 
     public function acceptedviajesAsconductor()
     {
         return $this->hasManyThrough(
-            viaje::class,
-            conductor::class,
+            Viaje::class,
+            Conductor::class,
             'user_id',
             'conductor_id',
             'id',
@@ -74,9 +74,14 @@ class User extends Authenticatable
         );
     }
 
-    public function RutaFavoritas()
+    public function rutaFavoritas()
     {
         return $this->hasMany(RutaFavorita::class);
+    }
+
+    public function debts()
+    {
+        return $this->hasMany(Debt::class);
     }
 
     public function PerfilPasajero()
