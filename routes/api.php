@@ -95,4 +95,3 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/viajes/{viaje}/pago/stripe', [PagoController::class, 'processstripe']);
     Route::post('/viajes/{viaje}/pago/paypal', [PagoController::class, 'processPayPal']);
 });
-

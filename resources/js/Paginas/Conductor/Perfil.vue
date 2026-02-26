@@ -49,11 +49,11 @@
           <div v-if="!editingPersonal" class="space-y-3">
             <div class="flex">
               <span class="w-32 text-sm text-neutral-slate">Nombre:</span>
-              <span class="text-neutral-dark font-medium">{{ conductorStore.perfil?.name || 'Sin nombre' }}</span>
+              <span class="text-neutral-dark font-medium">{{ authStore.usuario?.name || 'Sin nombre' }}</span>
             </div>
             <div class="flex">
               <span class="w-32 text-sm text-neutral-slate">Email:</span>
-              <span class="text-neutral-dark">{{ conductorStore.perfil?.email || 'Sin email' }}</span>
+              <span class="text-neutral-dark">{{ authStore.usuario?.email || 'Sin email' }}</span>
             </div>
             <div class="flex">
               <span class="w-32 text-sm text-neutral-slate">Teléfono:</span>

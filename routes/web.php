@@ -63,7 +63,7 @@ Route::middleware('auth')->group(function () {
         })->name('conductor.viajes');
 
         Route::get('/conductor/ganancias', function () {
-            return Inertia::render('Conductor/Panel');
+            return Inertia::render('Conductor/Ganancias');
         })->name('conductor.earnings');
 
         // Ruta para el perfil del conductor

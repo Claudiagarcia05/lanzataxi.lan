@@ -35,6 +35,10 @@
               <h2 class="text-xl font-bold text-neutral-dark">LanzaTaxi</h2>
               <span class="text-neutral-slate">¿A dónde vamos?</span>
             </div>
+            <!-- Mensaje de error superior -->
+            <div v-if="errorMsg" class="mb-6 bg-red-50 border border-red-200 p-4 rounded-lg">
+              <p class="text-sm font-medium text-red-700">{{ errorMsg }}</p>
+            </div>
 
             <form @submit.prevent="submitBooking" class="space-y-6">
               <!-- Detalles del viaje -->
@@ -249,6 +253,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+const errorMsg = ref('')
 import DisposicionPasajero from '../../Disposiciones/DisposicionPasajero.vue'
 import MapaTaxi from '../../Componentes/MapaTaxi.vue'
 import { useAuthStore } from '../../Almacenes/almacenAutenticacion.js'
@@ -417,13 +422,14 @@ watch([() => bookingForm.value.distance, () => bookingForm.value.luggage, () => 
 
 // Enviar reserva
 const submitBooking = async () => {
+  errorMsg.value = ''
   if (!bookingForm.value.pickupAddress || !bookingForm.value.dropoffAddress) {
-    alert('Por favor completa los datos de origen y destino')
+    errorMsg.value = 'Por favor completa los datos de origen y destino.'
     return
   }
 
   if (bookingForm.value.pagoMethod === 'wallet' && totalEstimatedPrice.value > walletStore.balance) {
-    alert('No tienes suficiente saldo en tu cartera')
+    errorMsg.value = 'No tienes suficiente saldo en tu cartera virtual. Añade dinero o elige otro método de pago.'
     return
   }
   
@@ -445,15 +451,15 @@ const submitBooking = async () => {
   }
   
   const result = await viajeStore.createTrip(datosViaje)
-  
+
   console.log('Create trip result:', result)
-  
+
   if (result.success) {
     console.log('Trip created successfully:', result.viaje)
     if (bookingForm.value.pagoMethod === 'wallet') {
       await walletStore.useFunds(result.viaje.price, result.viaje.id)
     }
-    alert('¡Reserva confirmada con éxito!')
+    // alert('¡Reserva confirmada con éxito!')
     console.log('Fetching trips...')
     await viajeStore.fetchTrips()
     console.log('Viajes loaded:', viajeStore.viajesPasajero)
@@ -462,7 +468,11 @@ const submitBooking = async () => {
     window.location.href = '/pasajero/reservas'
   } else {
     console.error('Error creating trip:', result.error)
-    alert('Error al crear la reserva. Inténtalo de nuevo.')
+    if (result.message) {
+      errorMsg.value = result.message
+    } else {
+      errorMsg.value = 'Error no dispone de suficiente saldo en la Cartera'
+    }
   }
 }
 

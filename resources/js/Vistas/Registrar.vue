@@ -113,7 +113,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '../stores/authStore';
+import { useAuthStore } from '../Almacenes/almacenAutenticacion';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -130,10 +130,19 @@ const form = ref({
   role: 'pasajero',
 });
 
+function validarEmail(email) {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
+}
+
 const handleRegister = async () => {
-  cargando.value = true;
   error.value = '';
   errors.value = {};
+  if (!validarEmail(form.value.email)) {
+    error.value = 'Email no válido';
+    return;
+  }
+  cargando.value = true;
 
   console.log('Intentando registro con:', { 
     name: form.value.name, 
@@ -147,8 +156,6 @@ const handleRegister = async () => {
   console.log('Resultado registro:', result);
 
   if (result.success) {
-    console.log('Registro exitoso, limpiando formulario y redirigiendo...');
-    
     // Limpiar el formulario
     form.value = {
       name: '',
@@ -158,8 +165,13 @@ const handleRegister = async () => {
       password_confirmation: '',
       role: 'pasajero',
     };
-
-    // Redirigir según el rol del usuario
+    // Redirigir según el rol del usuario autenticado
+    const rol = result.usuario?.role || form.value.role;
+    if (rol === 'conductor') {
+      router.push('/conductor/dashboard');
+    } else {
+      router.push('/dashboard');
+    }
     return;
   }
 
@@ -168,4 +180,3 @@ const handleRegister = async () => {
   errors.value = result.errors || {};
 };
 </script>
-

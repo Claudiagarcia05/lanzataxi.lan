@@ -10,14 +10,14 @@ class ConductorController extends Controller
 {
     public function profile(Request $solicitud)
     {
-        $conductor = $solicitud->user()->conductor()?->with('taxi')->first();
+        $conductor = $solicitud->user()->conductor;
 
         if (!$conductor) {
             return response()->json(['message' => 'conductor profile not found'], 404);
         }
 
-        // Incluir avatar en la relación user
-        return response()->json($conductor->load(['user:id,name,email,phone,avatar']));
+        // Incluir avatar en la relación user y taxi
+        return response()->json($conductor->load(['user:id,name,email,phone,avatar', 'taxi']));
     }
 
     public function index()

@@ -46,6 +46,18 @@ export const useConductorStore = defineStore('conductor', {
         // Guardar avatar si existe en user
         const avatar = datosPerfil.user?.avatar || null
 
+        // Sincronizar datos de usuario autenticado
+        if (datosPerfil.user) {
+          auth.usuario = {
+            ...auth.usuario,
+            name: datosPerfil.user.name,
+            email: datosPerfil.user.email,
+            phone: datosPerfil.user.phone,
+            avatar: datosPerfil.user.avatar
+          }
+          localStorage.setItem('usuario', JSON.stringify(auth.usuario))
+        }
+
         this.perfil = {
           id: auth.usuario?.id,
           name: datosPerfil.user?.name || auth.usuario?.name,

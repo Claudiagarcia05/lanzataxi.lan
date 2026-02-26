@@ -1,28 +1,17 @@
 ﻿<template>
   <div class="min-h-screen bg-neutral-soft">
-    <aside :class="[
-      'fixed left-0 top-0 z-40 h-screen transition-all duration-300 bg-white border-r border-neutral-volcanic shadow-lg',
-      isSidebarOpen ? 'w-64' : 'w-20'
-    ]">
+    <aside class="fixed left-0 top-0 z-40 h-screen w-64 transition-all duration-300 bg-white border-r border-neutral-volcanic shadow-lg">
       <div class="flex items-center justify-between p-4 border-b border-neutral-volcanic h-20">
-        <div v-if="isSidebarOpen" class="flex items-center space-x-2">
+        <div class="flex items-center space-x-2">
           <img src="/images/logo.png" alt="LanzaTaxi" class="h-10 w-auto">
           <span class="font-bold text-lanzarote-blue text-lg">LanzaTaxi</span>
         </div>
-        <div v-else class="w-full flex justify-center">
-          <img src="/images/logo.png" alt="LanzaTaxi" class="h-10 w-auto">
-        </div>
-        <button @click="toggleSidebar" class="p-1.5 rounded-lg hover:bg-neutral-soft transition-colors">
-          <svg class="w-5 h-5 text-neutral-slate" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path v-if="isSidebarOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-            <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-          </svg>
-        </button>
+        <!-- Botón de toggle eliminado para mantener el sidebar siempre expandido -->
       </div>
 
       <div class="p-4 border-b border-neutral-volcanic">
         <div class="flex items-center space-x-3">
-          <div v-if="isSidebarOpen" class="overflow-hidden">
+          <div class="overflow-hidden">
             <p class="font-semibold text-neutral-dark truncate">{{ conductorStore.perfil?.name || authStore.usuario?.name }}</p>
             <p class="text-xs text-neutral-slate">Taxista</p>
           </div>
@@ -34,12 +23,12 @@
           <li v-for="item in elementosMenu" :key="item.label">
             <button @click="navigateTo(item.path)" :class="[
               'flex items-center space-x-3 p-3 rounded-lg w-full transition-colors',
-              item.activo ? 'bg-lanzarote-blue/10 text-lanzarote-blue' : 'text-neutral-dark hover:bg-neutral-soft'
+              item.activo ? 'bg-lanzarote-blue/10 text-lanzarote-blue' : 'text-neutral-dark'
             ]">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.icon" />
               </svg>
-              <span v-if="isSidebarOpen" class="text-sm font-medium">{{ item.label }}</span>
+              <span class="text-sm font-medium">{{ item.label }}</span>
             </button>
           </li>
         </ul>
@@ -50,12 +39,12 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
-          <span v-if="isSidebarOpen" class="text-sm font-medium">Cerrar sesión</span>
+          <span class="text-sm font-medium">Cerrar sesión</span>
         </button>
       </div>
     </aside>
 
-    <div :class="['transition-all duration-300', isSidebarOpen ? 'ml-64' : 'ml-20']">
+    <div class="transition-all duration-300 ml-64">
       <header class="bg-white shadow-sm sticky top-0 z-30">
         <div class="flex justify-between items-center px-6 py-4">
           <div>
@@ -84,7 +73,7 @@ const viajeStore = useTripStore()
 const conductorStore = useConductorStore()
 const page = usePage()
 
-const isSidebarOpen = ref(true)
+// Sidebar siempre abierto, sin estado de despliegue
 
 // Definir la ruta actual usando la propiedad url de Inertia
 const rutaActual = computed(() => page.url)
@@ -115,9 +104,7 @@ const elementosMenu = computed(() => [
   },
 ])
 
-const toggleSidebar = () => {
-  isSidebarOpen.value = !isSidebarOpen.value
-}
+
 
 const navigateTo = (path) => {
   inertiaRouter.visit(path)

@@ -13,10 +13,13 @@ class AuthController extends Controller
     {
         $validated = $solicitud->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'email' => 'required|email:rfc,dns|unique:users,email',
             'password' => 'required|string|min:6|confirmed',
             'role' => 'nullable|in:pasajero,conductor,admin',
             'phone' => 'nullable|string|max:50',
+        ], [
+            'email.email' => 'El email debe ser una dirección válida y con dominio real.',
+            'email.unique' => 'El email ya está registrado.',
         ]);
 
         $usuario = User::create([
@@ -27,6 +30,16 @@ class AuthController extends Controller
             'phone' => $validated['phone'] ?? null,
             'wallet_balance' => 0,
         ]);
+
+        // Si el usuario es conductor, crear registro en tabla conductors
+        if (($validated['role'] ?? 'pasajero') === 'conductor') {
+            \App\Models\Conductor::create([
+                'user_id' => $usuario->id,
+                'license_number' => 'LIC-' . strtoupper(uniqid()),
+                'rating' => 5.0,
+                'is_active' => false,
+            ]);
+        }
 
         // Crear token para autenticar automáticamente
         $token = $usuario->createToken('api')->plainTextToken;

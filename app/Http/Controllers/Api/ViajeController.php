@@ -140,6 +140,20 @@ class ViajeController extends Controller
 
         $precio = $this->calcularPrecio($mun_origen, $mun_destino, $distance, $hora);
 
+        // Validar saldo si método de pago es cartera virtual
+        if ($this->mapPaymentMethod($validated['pago_method'] ?? 'efectivo') === 'app') {
+            $usuario = $solicitud->user();
+            $saldo = $usuario->wallet_balance ?? 0;
+            if ($saldo < $precio) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Saldo insuficiente en la cartera virtual. Añade dinero o elige otro método de pago.',
+                    'current_balance' => $saldo,
+                    'required_amount' => $precio
+                ], 400);
+            }
+        }
+
         $viaje = Viaje::create([
             'pasajero_id' => $solicitud->user()->id,
             'pickup_lat' => $validated['pickup_lat'],

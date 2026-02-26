@@ -70,7 +70,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '../stores/authStore';
+import { useAuthStore } from '../Almacenes/almacenAutenticacion';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -82,9 +82,18 @@ const form = ref({
   password: '',
 });
 
+function validarEmail(email) {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
+}
+
 const handleLogin = async () => {
-  cargando.value = true;
   error.value = '';
+  if (!validarEmail(form.value.email)) {
+    error.value = 'Email no válido';
+    return;
+  }
+  cargando.value = true;
 
   console.log('Intentando login con:', { email: form.value.email });
 
@@ -95,13 +104,11 @@ const handleLogin = async () => {
 
   if (result.success) {
     console.log('Login exitoso, limpiando formulario y redirigiendo...');
-    
     // Limpiar el formulario
     form.value = {
       email: '',
       password: '',
     };
-
     // Redirigir según el rol del usuario
     const dashboardRoute = auth.getDashboardRoute();
     console.log('Ruta de redirección:', dashboardRoute);

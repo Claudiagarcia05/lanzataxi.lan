@@ -1,10 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router';
 const Home = () => import('../Paginas/Inicio.vue');
-const Login = () => import('../Paginas/Autenticacion/IniciarSesion.vue');
+const Login = () => import('../Vistas/IniciarSesion.vue');
 const Register = () => import('../Paginas/Autenticacion/Registrar.vue');
 const PanelPasajero = () => import('../Paginas/Pasajero/Panel.vue');
 // const AdminDashboard = () => import('../Paginas/Admin/Dashboard.vue'); // No existe, comentar o crear si es necesario
-import { useAuthStore } from '../stores/authStore';
+import { useAuthStore } from '../Almacenes/almacenAutenticacion';
 
 const routes = [
     {
