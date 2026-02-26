@@ -15,6 +15,14 @@ jobs:
           php-version: '8.2'
       - name: Install Dependencies
         run: composer install --no-progress
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install Node dependencies
+        run: npm ci
+      - name: Build Frontend
+        run: npm run build
       - name: Prepare Testing Environment
         run: |
           cp .env.example .env
