@@ -21,9 +21,7 @@
       <nav class="p-4">
         <ul class="space-y-1">
           <li v-for="item in elementosMenu" :key="item.label">
-            <button
-              @click="navigateTo(item.path)"
-              :class="[ 'flex items-center space-x-3 p-3 rounded-lg w-full transition-colors', item.activo ? 'bg-lanzarote-blue/10 text-lanzarote-blue' : 'text-neutral-dark' ]">
+            <button @click="navigateTo(item.path)" :class="[ 'flex items-center space-x-3 p-3 rounded-lg w-full transition-colors', item.activo ? 'bg-lanzarote-blue/10 text-lanzarote-blue' : 'text-neutral-dark' ]">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.icon" />
               </svg>
@@ -62,8 +60,9 @@
   </div>
 </template>
 
+
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { router as inertiaRouter, usePage } from '@inertiajs/vue3'
 import { useAuthStore } from '../Almacenes/almacenAutenticacion.js'
 import { useTripStore } from '../Almacenes/almacenViaje.js'
@@ -96,29 +95,46 @@ const loadNotifications = async () => {
   }
 }
 
+let notificationInterval = null
+
 onMounted(() => {
-  viajeStore.fetchTrips()
+  if (!authStore.initialized) {
+    authStore.checkAuth().finally(() => {
+      viajeStore.fetchTrips()
+      viajeStore.startPolling(5000)
+    })
+  } else {
+    viajeStore.fetchTrips()
+    viajeStore.startPolling(5000)
+  }
   loadNotifications()
   
   // Actualizar notificaciones cada 30 segundos (solo si no hay error)
-  const notificationInterval = setInterval(() => {
+  notificationInterval = setInterval(() => {
     if (!notificationError.value) {
       loadNotifications()
     }
   }, 30000)
-  
-  // Limpiar interval al desmontar
-  return () => clearInterval(notificationInterval)
+})
+
+onUnmounted(() => {
+  viajeStore.stopPolling()
+  if (notificationInterval) {
+    clearInterval(notificationInterval)
+    notificationInterval = null
+  }
 })
 
 const rutaActual = computed(() => {
   const url = page.url || (typeof window !== 'undefined' ? window.location.pathname : '/')
+
   return String(url).split('?')[0]
 })
 
 const unreadNotifications = computed(() => notificaciones.value.filter(n => !n.read_at).length)
 
 const userAvatar = computed(() => {
+
   return authStore.usuario?.avatar || null
 })
 
@@ -143,8 +159,6 @@ const elementosMenu = computed(() => [
     activo: rutaActual.value === '/pasajero/perfil',
   },
 ])
-
-
 
 const navigateTo = (path) => {
   inertiaRouter.visit(path)

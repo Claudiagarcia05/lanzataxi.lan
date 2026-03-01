@@ -1,69 +1,59 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+    namespace App\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Auth\Events\PasswordReset;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rules;
-use Illuminate\Validation\ValidationException;
-use Inertia\Inertia;
-use Inertia\Response;
+    use App\Http\Controllers\Controller;
+    use Illuminate\Auth\Events\PasswordReset;
+    use Illuminate\Http\RedirectResponse;
+    use Illuminate\Http\Request;
+    use Illuminate\Support\Facades\Hash;
+    use Illuminate\Support\Facades\Password;
+    use Illuminate\Support\Str;
+    use Illuminate\Validation\Rules;
+    use Illuminate\Validation\ValidationException;
+    use Inertia\Inertia;
+    use Inertia\Response;
 
-class NewPasswordController extends Controller
-{
-    /**
-     * Display the password reset view.
-     */
-    public function create(Request $solicitud): Response
-    {
-        return Inertia::render('Auth/ResetPassword', [
-            'email' => $solicitud->email,
-            'token' => $solicitud->route('token'),
-        ]);
-    }
+    class NewPasswordController extends Controller {
+        public function create(Request $solicitud): Response {
 
-    /**
-     * Handle an incoming new password request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    public function store(Request $solicitud): RedirectResponse
-    {
-        $solicitud->validate([
-            'token' => 'required',
-            'email' => 'required|email',
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
-
-        // Here we will attempt to reset the user's password. If it is successful we
-        // will update the password on an actual user model and persist it to the
-        // database. Otherwise we will parse the error and return the response.
-        $estado = Password::reset(
-            $solicitud->only('email', 'password', 'password_confirmation', 'token'),
-            function ($usuario) use ($solicitud) {
-                $usuario->forceFill([
-                    'password' => Hash::make($solicitud->password),
-                    'remember_token' => Str::random(60),
-                ])->save();
-
-                event(new PasswordReset($usuario));
-            }
-        );
-
-        // If the password was successfully reset, we will redirect the user back to
-        // the application's home authenticated view. If there is an error we can
-        // redirect them back to where they came from with their error message.
-        if ($estado == Password::PASSWORD_RESET) {
-            return redirect()->route('login')->with('status', __($estado));
+            return Inertia::render('Auth/ResetPassword', [
+                'email' => $solicitud->email,
+                'token' => $solicitud->route('token'),
+            ]);
         }
 
-        throw ValidationException::withMessages([
-            'email' => [trans($estado)],
-        ]);
+        /**
+         * Handle an incoming new password request.
+         *
+         * @throws \Illuminate\Validation\ValidationException
+         */
+        public function store(Request $solicitud): RedirectResponse {
+            $solicitud->validate([
+                'token' => 'required',
+                'email' => 'required|email',
+                'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            ]);
+
+            $estado = Password::reset(
+                $solicitud->only('email', 'password', 'password_confirmation', 'token'),
+                function ($usuario) use ($solicitud) {
+                    $usuario->forceFill([
+                        'password' => Hash::make($solicitud->password),
+                        'remember_token' => Str::random(60),
+                    ])->save();
+
+                    event(new PasswordReset($usuario));
+                }
+            );
+
+            if ($estado == Password::PASSWORD_RESET) {
+
+                return redirect()->route('login')->with('status', __($estado));
+            }
+
+            throw ValidationException::withMessages([
+                'email' => [trans($estado)],
+            ]);
+        }
     }
-}

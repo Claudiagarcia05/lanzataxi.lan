@@ -8,7 +8,9 @@ export const useTripStore = defineStore('viaje', {
         viajeActivo: null,
         cargando: false,
         error: null,
-        ubicacionConductor: null
+        ubicacionConductor: null,
+        pollingId: null,
+        ignoredOfferIds: []
     }),
 
     getters: {
@@ -19,7 +21,13 @@ export const useTripStore = defineStore('viaje', {
         },
         viajesConductor: (state) => {
             const auth = useAuthStore()
-            return state.viajes.filter(t => t.conductorId === auth.usuario?.id)
+            const userId = auth.usuario?.id
+            // En vistas de conductor podemos tener viajes ya filtrados por backend (mis viajes)
+            // incluso antes de que el auth store termine de cargar el usuario.
+            if (userId == null) {
+                return state.viajes.filter(t => t.conductorEntityId != null)
+            }
+            return state.viajes.filter(t => Number(t.conductorId) === Number(userId))
         },
         viajesPendientes: (state) => state.viajes.filter(t => t.estado === 'pendiente'),
         completedviajes: (state) => state.viajes.filter(t => t.estado === 'completed'),
@@ -30,10 +38,20 @@ export const useTripStore = defineStore('viaje', {
     },
 
     actions: {
+        parseFiniteNumber(value) {
+            const n = typeof value === 'number' ? value : parseFloat(value)
+            return Number.isFinite(n) ? n : null
+        },
+
         mapearViaje(viaje) {
+            const auth = useAuthStore()
+
+            const path = typeof window !== 'undefined' ? window.location.pathname : ''
+            const isConductorContext = auth.isconductor || path.startsWith('/conductor')
+
             const statusMap = {
                 pending: 'pendiente',
-                accepted: 'accepted',
+                accepted: isConductorContext ? 'accepted' : 'in_progress',
                 in_progress: 'in_progress',
                 completed: 'completed',
                 cancelled: 'cancelled',
@@ -52,10 +70,10 @@ export const useTripStore = defineStore('viaje', {
                 dropoff: viaje.dropoff_address || `(${viaje.dropoff_lat}, ${viaje.dropoff_lng})`,
                 pickup_address: viaje.pickup_address,
                 dropoff_address: viaje.dropoff_address,
-                pickupLat: Number(viaje.pickup_lat),
-                pickupLng: Number(viaje.pickup_lng),
-                dropoffLat: Number(viaje.dropoff_lat),
-                dropoffLng: Number(viaje.dropoff_lng),
+                pickupLat: this.parseFiniteNumber(viaje.pickup_lat),
+                pickupLng: this.parseFiniteNumber(viaje.pickup_lng),
+                dropoffLat: this.parseFiniteNumber(viaje.dropoff_lat),
+                dropoffLng: this.parseFiniteNumber(viaje.dropoff_lng),
                 date: viaje.created_at,
                 created_at: viaje.created_at,
                 endTime: viaje.end_time,
@@ -75,6 +93,20 @@ export const useTripStore = defineStore('viaje', {
             }
         },
 
+        startPolling(intervalMs = 5000) {
+            this.stopPolling()
+            this.pollingId = setInterval(() => {
+                this.fetchTrips()
+            }, intervalMs)
+        },
+
+        stopPolling() {
+            if (this.pollingId) {
+                clearInterval(this.pollingId)
+                this.pollingId = null
+            }
+        },
+
         async fetchTrips() {
             this.cargando = true
             this.error = null
@@ -82,15 +114,52 @@ export const useTripStore = defineStore('viaje', {
                 const auth = useAuthStore()
                 let endpoint = '/api/user/viajes'
 
-                if (auth.isconductor) {
+                const path = typeof window !== 'undefined' ? window.location.pathname : ''
+                const assumeConductor = auth.isconductor || path.startsWith('/conductor')
+                const assumeAdmin = auth.isAdmin || path.startsWith('/admin')
+
+                if (assumeConductor) {
                     endpoint = '/api/conductor/viajes'
-                } else if (auth.isAdmin) {
+                } else if (assumeAdmin) {
                     endpoint = '/api/admin/viajes'
                 }
 
-                const response = await axios.get(endpoint)
-                console.log('✅ Response from fetchTrips:', response.data)
-                this.viajes = response.data.map(this.mapearViaje)
+                if (assumeConductor) {
+                    const results = await Promise.allSettled([
+                        axios.get(endpoint),
+                        axios.get('/api/conductor/viajes/available'),
+                    ])
+
+                    const [misViajesResult, disponiblesResult] = results
+
+                    const misViajesData = misViajesResult.status === 'fulfilled'
+                        ? (misViajesResult.value.data || [])
+                        : []
+
+                    const disponiblesData = disponiblesResult.status === 'fulfilled'
+                        ? (disponiblesResult.value.data || [])
+                        : []
+
+                    if (misViajesResult.status === 'rejected' && disponiblesResult.status === 'rejected') {
+                        throw misViajesResult.reason || disponiblesResult.reason
+                    }
+
+                    if (disponiblesResult.status === 'rejected') {
+                        console.error('❌ Error fetching available trips:', disponiblesResult.reason?.response?.data || disponiblesResult.reason?.message)
+                        this.error = disponiblesResult.reason?.response?.data?.message || 'No se pudieron cargar las ofertas'
+                    }
+
+                    const misViajes = misViajesData.map(this.mapearViaje)
+                    const disponibles = disponiblesData
+                        .map(this.mapearViaje)
+                        .filter(t => !this.ignoredOfferIds.includes(t.id))
+
+                    this.viajes = [...disponibles, ...misViajes]
+                } else {
+                    const response = await axios.get(endpoint)
+                    console.log('✅ Response from fetchTrips:', response.data)
+                    this.viajes = response.data.map(this.mapearViaje)
+                }
                 console.log('✅ Mapped viajes count:', this.viajes.length)
                 console.log('✅ Viajes:', this.viajes)
             } catch (error) {
@@ -135,10 +204,50 @@ export const useTripStore = defineStore('viaje', {
         },
 
         async aceptarViaje(viajeId) {
-            const response = await axios.patch(`/api/viajes/${viajeId}/accept`)
-            const viajeActualizado = this.mapearViaje(response.data)
-            this.viajes = this.viajes.map(t => t.id === viajeId ? viajeActualizado : t)
-            this.viajeActivo = viajeActualizado
+            try {
+                const response = await axios.patch(`/api/viajes/${viajeId}/accept`)
+                const viajeActualizado = this.mapearViaje(response.data)
+                let replaced = false
+                const updatedList = this.viajes
+                    .filter(t => !(t.id === viajeId && t.estado === 'pendiente'))
+                    .map(t => {
+                        if (t.id !== viajeId) return t
+                        replaced = true
+                        return viajeActualizado
+                    })
+
+                this.viajes = replaced ? updatedList : [viajeActualizado, ...updatedList]
+                this.viajeActivo = viajeActualizado
+
+                // Asegurar consistencia: el backend ya asignó conductor/taxi/estado.
+                // Refrescamos para que el panel del conductor refleje el cambio inmediatamente.
+                const auth = useAuthStore()
+                const path = typeof window !== 'undefined' ? window.location.pathname : ''
+                const assumeConductor = auth.isconductor || path.startsWith('/conductor')
+                if (assumeConductor) {
+                    await this.fetchTrips()
+                }
+            } catch (error) {
+                const status = error.response?.status
+                if (status === 400) {
+                    this.error = error.response?.data?.message || 'No se pudo aceptar el viaje.'
+                    await this.fetchTrips()
+                    return
+                }
+                if (status === 409) {
+                    this.error = 'Este viaje ya fue aceptado por otro conductor.'
+                    await this.fetchTrips()
+                    return
+                }
+                throw error
+            }
+        },
+
+        dismissOffer(viajeId) {
+            if (!this.ignoredOfferIds.includes(viajeId)) {
+                this.ignoredOfferIds.push(viajeId)
+            }
+            this.viajes = this.viajes.filter(t => t.id !== viajeId)
         },
 
         async startTrip(viajeId) {
@@ -146,6 +255,13 @@ export const useTripStore = defineStore('viaje', {
             const viajeActualizado = this.mapearViaje(response.data)
             this.viajes = this.viajes.map(t => t.id === viajeId ? viajeActualizado : t)
             this.viajeActivo = viajeActualizado
+
+            const auth = useAuthStore()
+            const path = typeof window !== 'undefined' ? window.location.pathname : ''
+            const assumeConductor = auth.isconductor || path.startsWith('/conductor')
+            if (assumeConductor) {
+                await this.fetchTrips()
+            }
         },
 
         async completeTrip(viajeId, valoracion = null, comment = '') {
@@ -157,6 +273,13 @@ export const useTripStore = defineStore('viaje', {
             const viajeActualizado = this.mapearViaje(response.data)
             this.viajes = this.viajes.map(t => t.id === viajeId ? viajeActualizado : t)
             this.viajeActivo = null
+
+            const auth = useAuthStore()
+            const path = typeof window !== 'undefined' ? window.location.pathname : ''
+            const assumeConductor = auth.isconductor || path.startsWith('/conductor')
+            if (assumeConductor) {
+                await this.fetchTrips()
+            }
         },
 
         async cancelTrip(viajeId) {

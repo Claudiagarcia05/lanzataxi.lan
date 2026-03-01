@@ -15,8 +15,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('viaje_id')->constrained()->onDelete('cascade');
             $table->decimal('amount', 8, 2);
-            $table->enum('method', ['cash', 'card', 'paypal']);
-            $table->enum('status', ['pending', 'paid', 'refunded'])->default('pending');
+            // Usar string para permitir métodos como app/stripe/paypal sin problemas de enum en SQLite.
+            $table->string('method', 20);
+            $table->string('status', 20)->default('pending');
+            $table->string('transaction_id', 255)->nullable();
             $table->timestamps();
         });
     }

@@ -109,6 +109,20 @@ export const useAuthStore = defineStore('auth', {
             let token = localStorage.getItem('token')
             let cadenaUsuario = localStorage.getItem('usuario')
 
+            // Si no hay token ni usuario guardado, puede que estemos autenticados por sesión (web).
+            // Intentar sincronizar usuario desde el servidor (auth:sanctum con cookies).
+            if (!token && !cadenaUsuario) {
+                try {
+                    const response = await axios.get('/api/me')
+                    this.usuario = response.data
+                    localStorage.setItem('usuario', JSON.stringify(response.data))
+                    this.initialized = true
+                    return true
+                } catch {
+                    // No hay sesión válida o no es stateful; continuar con el flujo normal
+                }
+            }
+
             // Si no hay token en localStorage, intentar desde cookie
             if (!token) {
                 token = getCookie('token')

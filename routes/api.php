@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\WalletController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Api\ConductorEstadoController;
 
 // Rutas públicas
 Route::post('/register', [AuthController::class, 'register']);
@@ -70,11 +71,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // El resto sigue protegido por role:conductor
     Route::middleware('role:conductor')->group(function () {
         Route::get('/conductor/viajes', [ViajeController::class, 'driverTrips']);
+        Route::get('/conductor/viajes/available', [ViajeController::class, 'available']);
         Route::patch('/viajes/{viaje}/accept', [ViajeController::class, 'accept']);
         Route::patch('/viajes/{viaje}/start', [ViajeController::class, 'start']);
         Route::patch('/viajes/{viaje}/complete', [ViajeController::class, 'complete']);
         Route::post('/conductor/ubicacion', [UbicacionController::class, 'update']);
-        Route::patch('/conductor/status', [ConductorController::class, 'updateStatus']);
+        Route::patch('/conductor/status', [ConductorEstadoController::class, 'update']);
     });
 
     // Admin

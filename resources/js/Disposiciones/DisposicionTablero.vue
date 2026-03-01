@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="min-h-screen bg-neutral-soft">
     <aside :class="[ 'fixed left-0 top-0 z-40 h-screen transition-all duration-300 bg-white border-r border-neutral-volcanic shadow-lg', isSidebarOpen ? 'w-64' : 'w-20' ]">
       <div class="flex items-center justify-between p-4 border-b border-neutral-volcanic h-20">
@@ -36,12 +36,7 @@
           <li v-for="item in elementosMenu" :key="item.label">
             <button
               @click="navigateTo(item.path)"
-              :class="[
-                'flex items-center space-x-3 p-3 rounded-lg w-full transition-colors',
-                item.activo
-                  ? 'bg-lanzarote-blue/10 text-lanzarote-blue'
-                  : 'text-neutral-dark hover:bg-neutral-soft'
-              ]"
+              :class="[ 'flex items-center space-x-3 p-3 rounded-lg w-full transition-colors', item.activo ? 'bg-lanzarote-blue/10 text-lanzarote-blue' : 'text-neutral-dark hover:bg-neutral-soft' ]"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.icon" />
@@ -54,11 +49,7 @@
 
       <div v-if="authStore.isconductor && isSidebarOpen" class="px-4 mt-4">
         <button
-          
-          :class="[
-            'w-full py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2',
-            
-          ]"
+          :class="[ 'w-full py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2', ]"
         >
           <span>🟢</span>
         </button>
@@ -188,10 +179,12 @@ const getUserRoleText = () => {
 const getDashboardTitle = () => {
   if (rutaActual.value.includes('/conductor')) return 'Panel Taxista'
   if (rutaActual.value.includes('/admin')) return 'Panel Administración'
+
   return 'Panel Pasajero'
 }
 
 const unreadNotifications = computed(() => {
+  
   return notificaciones.value.filter(n => !n.read).length
 })
 

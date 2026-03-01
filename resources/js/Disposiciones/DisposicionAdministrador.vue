@@ -1,9 +1,6 @@
 <template>
   <div class="min-h-screen bg-neutral-soft">
-    <aside :class="[
-      'fixed left-0 top-0 z-40 h-screen transition-all duration-300 bg-white border-r border-neutral-volcanic shadow-lg',
-      isSidebarOpen ? 'w-64' : 'w-20'
-    ]">
+    <aside :class="['fixed left-0 top-0 z-40 h-screen transition-all duration-300 bg-white border-r border-neutral-volcanic shadow-lg', isSidebarOpen ? 'w-64' : 'w-20']">
       <div class="flex items-center justify-between p-4 border-b border-neutral-volcanic h-20">
         <div v-if="isSidebarOpen" class="flex items-center space-x-2">
           <img src="/images/logo.png" alt="LanzaTaxi" class="h-10 w-auto">
@@ -35,12 +32,9 @@
       <nav class="p-4">
         <ul class="space-y-1">
           <li v-for="item in elementosMenu" :key="item.label">
-            <button @click="navigateTo(item.path)" :class="[
-              'flex items-center space-x-3 p-3 rounded-lg w-full transition-colors',
-              item.activo ? 'bg-lanzarote-blue/10 text-lanzarote-blue' : 'text-neutral-dark hover:bg-neutral-soft'
-            ]">
+            <button @click="navigateTo(item.path)" :class="['flex items-center space-x-3 p-3 rounded-lg w-full transition-colors', item.activo ? 'bg-lanzarote-blue/10 text-lanzarote-blue' : 'text-neutral-dark hover:bg-neutral-soft']">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.icon" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.icon"/>
               </svg>
               <span v-if="isSidebarOpen" class="text-sm font-medium">{{ item.label }}</span>
             </button>
@@ -78,6 +72,7 @@
   </div>
 </template>
 
+
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { router as inertiaRouter, usePage } from '@inertiajs/vue3'
@@ -96,6 +91,7 @@ onMounted(() => {
 
 const rutaActual = computed(() => {
   const url = page.url || (typeof window !== 'undefined' ? window.location.pathname : '/')
+
   return String(url).split('?')[0]
 })
 

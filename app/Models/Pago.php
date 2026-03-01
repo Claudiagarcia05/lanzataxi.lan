@@ -4,13 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class pago extends Model
+class Pago extends Model
 {
-    protected $fillable = ['viaje_id', 'amount', 'method', 'status'];
+    protected $fillable = [
+        'viaje_id',
+        'amount',
+        'method',
+        'status',
+        'transaction_id',
+    ];
 
     public function viaje()
     {
-        return $this->belongsTo(viaje::class);
+        return $this->belongsTo(Viaje::class);
     }
 }
-

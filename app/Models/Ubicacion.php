@@ -1,16 +1,14 @@
 <?php
 
-namespace App\Models;
+    namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+    use Illuminate\Database\Eloquent\Model;
 
-class ubicacion extends Model
-{
-    protected $fillable = ['conductor_id', 'lat', 'lng'];
+    class ubicacion extends Model {
+        protected $fillable = ['conductor_id', 'lat', 'lng'];
 
-    public function conductor()
-    {
-        return $this->belongsTo(Conductor::class);
+        public function conductor() {
+            
+            return $this->belongsTo(Conductor::class);
+        }
     }
-}
-

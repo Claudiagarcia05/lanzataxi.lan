@@ -35,10 +35,10 @@ import 'leaflet-routing-machine'
 import '../../css/seguimiento.css'
 
 const props = defineProps({
-  pickupLat: { type: Number, required: true },
-  pickupLng: { type: Number, required: true },
-  dropoffLat: { type: Number, required: true },
-  dropoffLng: { type: Number, required: true },
+  pickupLat: { type: Number, default: null },
+  pickupLng: { type: Number, default: null },
+  dropoffLat: { type: Number, default: null },
+  dropoffLng: { type: Number, default: null },
   taxiLat: { type: Number, default: null },
   taxiLng: { type: Number, default: null },
   estado: { type: String, default: 'pendiente' }
@@ -87,6 +87,9 @@ const icons = {
 const initMap = async () => {
   if (!mapElement.value || map) return
 
+  const hasPickup = Number.isFinite(props.pickupLat) && Number.isFinite(props.pickupLng)
+  if (!hasPickup) return
+
   await nextTick()
 
   map = L.map(mapElement.value).setView([props.pickupLat, props.pickupLng], 13)
@@ -95,17 +98,21 @@ const initMap = async () => {
     attribution: '© OpenStreetMap'
   }).addTo(map)
 
-  // Marcadores fijos
-  pickupMarker = L.marker([props.pickupLat, props.pickupLng], { 
-    icon: icons.pickup 
+  // Marcador origen
+  pickupMarker = L.marker([props.pickupLat, props.pickupLng], {
+    icon: icons.pickup
   }).addTo(map).bindPopup('Origen')
 
-  dropoffMarker = L.marker([props.dropoffLat, props.dropoffLng], { 
-    icon: icons.dropoff 
-  }).addTo(map).bindPopup('Destino')
+  // Marcador destino (solo si hay coordenadas válidas)
+  const hasDropoff = Number.isFinite(props.dropoffLat) && Number.isFinite(props.dropoffLng)
+  if (hasDropoff) {
+    dropoffMarker = L.marker([props.dropoffLat, props.dropoffLng], {
+      icon: icons.dropoff
+    }).addTo(map).bindPopup('Destino')
 
-  // Calcular ruta
-  calculateRoute()
+    // Calcular ruta
+    calculateRoute()
+  }
 
   // Si hay ubicación del taxi, mostrarlo
   if (props.taxiLat && props.taxiLng) {
@@ -115,6 +122,11 @@ const initMap = async () => {
 
 // Calcular ruta entre origen y destino
 const calculateRoute = () => {
+  if (!map) return
+  const hasPickup = Number.isFinite(props.pickupLat) && Number.isFinite(props.pickupLng)
+  const hasDropoff = Number.isFinite(props.dropoffLat) && Number.isFinite(props.dropoffLng)
+  if (!hasPickup || !hasDropoff) return
+
   if (routingControl) {
     map.removeControl(routingControl)
   }
@@ -147,6 +159,9 @@ const calculateRoute = () => {
 
 // Añadir marcador del taxi
 const addTaxiMarker = () => {
+  if (!map) return
+  if (!Number.isFinite(props.taxiLat) || !Number.isFinite(props.taxiLng)) return
+
   if (taxiMarker) {
     taxiMarker.setLatLng([props.taxiLat, props.taxiLng])
   } else {
@@ -162,20 +177,33 @@ const addTaxiMarker = () => {
 
 // Watchers
 watch(() => [props.taxiLat, props.taxiLng], ([newLat, newLng]) => {
-  if (newLat && newLng) {
+  if (Number.isFinite(newLat) && Number.isFinite(newLng)) {
     addTaxiMarker()
   }
 })
 
 watch(() => [props.pickupLat, props.pickupLng, props.dropoffLat, props.dropoffLng], () => {
-  if (map) {
-    calculateRoute()
-    if (pickupMarker) {
-      pickupMarker.setLatLng([props.pickupLat, props.pickupLng])
-    }
+  const hasPickup = Number.isFinite(props.pickupLat) && Number.isFinite(props.pickupLng)
+  const hasDropoff = Number.isFinite(props.dropoffLat) && Number.isFinite(props.dropoffLng)
+
+  if (!map) {
+    if (hasPickup) initMap()
+    return
+  }
+
+  if (hasPickup && pickupMarker) {
+    pickupMarker.setLatLng([props.pickupLat, props.pickupLng])
+  }
+
+  if (hasDropoff) {
     if (dropoffMarker) {
       dropoffMarker.setLatLng([props.dropoffLat, props.dropoffLng])
+    } else {
+      dropoffMarker = L.marker([props.dropoffLat, props.dropoffLng], {
+        icon: icons.dropoff
+      }).addTo(map).bindPopup('Destino')
     }
+    calculateRoute()
   }
 })
 

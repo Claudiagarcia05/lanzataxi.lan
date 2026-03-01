@@ -11,10 +11,13 @@ export function useAuthStore() {
     if (!user.value) return '/';
     switch (user.value.role) {
       case 'conductor':
+
         return '/conductor/dashboard';
       case 'admin':
+
         return '/admin/dashboard';
       default:
+
         return '/pasajero/home';
     }
   }
@@ -29,18 +32,21 @@ export function useAuthStore() {
         // Guardar token en localStorage si se desea persistencia
         localStorage.setItem('token', token.value);
         axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`;
+
         return { success: true };
       }
+
       return { success: false, error: 'Respuesta inesperada del servidor.' };
     } catch (error) {
       // Si el backend responde con error 401, mostrar mensaje personalizado
       if (error.response && error.response.status === 401) {
+        
         return {
           success: false,
           error: error.response.data.message || 'Credenciales inválidas. Por favor verifica tu email y contraseña.'
         };
       }
-      // Otros errores
+
       return {
         success: false,
         error: error.response?.data?.message || 'Error al intentar iniciar sesión.'
@@ -53,6 +59,7 @@ export function useAuthStore() {
     // Validación extra de email en el store
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!re.test(email)) {
+
       return { success: false, error: 'Email no válido' };
     }
     try {
@@ -69,10 +76,13 @@ export function useAuthStore() {
         user.value = response.data.user;
         localStorage.setItem('token', token.value);
         axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`;
+
         return { success: true };
       }
+
       return { success: false, error: 'Respuesta inesperada del servidor.' };
     } catch (error) {
+
       return {
         success: false,
         error: error.response?.data?.message || 'Error al intentar registrar usuario',

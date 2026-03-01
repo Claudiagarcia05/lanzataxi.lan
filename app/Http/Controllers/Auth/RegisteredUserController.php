@@ -1,51 +1,46 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+    namespace App\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller;
-use App\Models\User;
-use Illuminate\Auth\Events\Registered;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules;
-use Inertia\Inertia;
-use Inertia\Response;
+    use App\Http\Controllers\Controller;
+    use App\Models\User;
+    use Illuminate\Auth\Events\Registered;
+    use Illuminate\Http\RedirectResponse;
+    use Illuminate\Http\Request;
+    use Illuminate\Support\Facades\Auth;
+    use Illuminate\Support\Facades\Hash;
+    use Illuminate\Validation\Rules;
+    use Inertia\Inertia;
+    use Inertia\Response;
 
-class RegisteredUserController extends Controller
-{
-    /**
-     * Display the registration view.
-     */
-    public function create(): Response
-    {
-        return Inertia::render('Auth/Register');
+    class RegisteredUserController extends Controller {
+        public function create(): Response {
+
+            return Inertia::render('Auth/Register');
+        }
+
+        /**
+         * Handle an incoming registration request.
+         *
+         * @throws \Illuminate\Validation\ValidationException
+         */
+        public function store(Request $solicitud): RedirectResponse {
+            $solicitud->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
+                'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            ]);
+
+            $usuario = User::create([
+                'name' => $solicitud->name,
+                'email' => $solicitud->email,
+                'password' => Hash::make($solicitud->password),
+            ]);
+
+            event(new Registered($usuario));
+
+            Auth::login($usuario);
+
+            return redirect(route('dashboard', absolute: false));
+        }
     }
-
-    /**
-     * Handle an incoming registration request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    public function store(Request $solicitud): RedirectResponse
-    {
-        $solicitud->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
-
-        $usuario = User::create([
-            'name' => $solicitud->name,
-            'email' => $solicitud->email,
-            'password' => Hash::make($solicitud->password),
-        ]);
-
-        event(new Registered($usuario));
-
-        Auth::login($usuario);
-
-        return redirect(route('dashboard', absolute: false));
-    }
-}

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="min-h-screen bg-neutral-soft">
     <aside class="fixed left-0 top-0 z-40 h-screen w-64 transition-all duration-300 bg-white border-r border-neutral-volcanic shadow-lg">
       <div class="flex items-center justify-between p-4 border-b border-neutral-volcanic h-20">
@@ -21,10 +21,7 @@
       <nav class="p-4">
         <ul class="space-y-1">
           <li v-for="item in elementosMenu" :key="item.label">
-            <button @click="navigateTo(item.path)" :class="[
-              'flex items-center space-x-3 p-3 rounded-lg w-full transition-colors',
-              item.activo ? 'bg-lanzarote-blue/10 text-lanzarote-blue' : 'text-neutral-dark'
-            ]">
+            <button @click="navigateTo(item.path)" :class="['flex items-center space-x-3 p-3 rounded-lg w-full transition-colors', item.activo ? 'bg-lanzarote-blue/10 text-lanzarote-blue' : 'text-neutral-dark']">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.icon" />
               </svg>
@@ -61,8 +58,9 @@
   </div>
 </template>
 
+
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { router as inertiaRouter, usePage } from '@inertiajs/vue3'
 import { useAuthStore } from '../Almacenes/almacenAutenticacion.js'
 import { useTripStore } from '../Almacenes/almacenViaje.js'
@@ -73,14 +71,23 @@ const viajeStore = useTripStore()
 const conductorStore = useConductorStore()
 const page = usePage()
 
-// Sidebar siempre abierto, sin estado de despliegue
-
-// Definir la ruta actual usando la propiedad url de Inertia
 const rutaActual = computed(() => page.url)
 
 onMounted(() => {
-  viajeStore.fetchTrips()
+  if (!authStore.initialized) {
+    authStore.checkAuth().finally(() => {
+      viajeStore.fetchTrips()
+      viajeStore.startPolling(5000)
+    })
+  } else {
+    viajeStore.fetchTrips()
+    viajeStore.startPolling(5000)
+  }
   conductorStore.obtenerPerfilConductor()
+})
+
+onUnmounted(() => {
+  viajeStore.stopPolling()
 })
 
 const elementosMenu = computed(() => [
@@ -104,14 +111,12 @@ const elementosMenu = computed(() => [
   },
 ])
 
-
-
 const navigateTo = (path) => {
   inertiaRouter.visit(path)
 }
 
 const logout = async () => {
-  if (conductorStore.isOnline) {
+  if (conductorStore.estaEnLinea) {
     await conductorStore.setOnlineStatus(false)
   }
   await authStore.logout()

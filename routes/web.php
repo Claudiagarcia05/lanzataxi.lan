@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AuthSessionController;
+use App\Models\Viaje;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -39,6 +40,14 @@ Route::middleware('auth')->group(function () {
         Route::get('/pasajero/reservas', function () {
             return Inertia::render('Pasajero/Reservas');
         })->name('pasajero.reservas');
+
+        Route::get('/pasajero/seguimiento/{viaje}', function (Viaje $viaje) {
+            abort_unless((int) $viaje->pasajero_id === (int) auth()->id(), 403);
+
+            return Inertia::render('Pasajero/Seguimiento', [
+                'viajeId' => $viaje->id,
+            ]);
+        })->name('pasajero.seguimiento');
 
         Route::get('/pasajero/perfil', function () {
             return Inertia::render('Pasajero/Perfil');

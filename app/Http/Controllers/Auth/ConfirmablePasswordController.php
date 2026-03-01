@@ -1,41 +1,33 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+    namespace App\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
-use Inertia\Inertia;
-use Inertia\Response;
+    use App\Http\Controllers\Controller;
+    use Illuminate\Http\RedirectResponse;
+    use Illuminate\Http\Request;
+    use Illuminate\Support\Facades\Auth;
+    use Illuminate\Validation\ValidationException;
+    use Inertia\Inertia;
+    use Inertia\Response;
 
-class ConfirmablePasswordController extends Controller
-{
-    /**
-     * Show the confirm password view.
-     */
-    public function show(): Response
-    {
-        return Inertia::render('Auth/ConfirmPassword');
-    }
+    class ConfirmablePasswordController extends Controller {
+        public function show(): Response {
 
-    /**
-     * Confirm the user's password.
-     */
-    public function store(Request $solicitud): RedirectResponse
-    {
-        if (! Auth::guard('web')->validate([
-            'email' => $solicitud->user()->email,
-            'password' => $solicitud->password,
-        ])) {
-            throw ValidationException::withMessages([
-                'password' => __('auth.password'),
-            ]);
+            return Inertia::render('Auth/ConfirmPassword');
         }
 
-        $solicitud->session()->put('auth.password_confirmed_at', time());
+        public function store(Request $solicitud): RedirectResponse {
+            if (! Auth::guard('web')->validate([
+                'email' => $solicitud->user()->email,
+                'password' => $solicitud->password,
+            ])) {
+                throw ValidationException::withMessages([
+                    'password' => __('auth.password'),
+                ]);
+            }
 
-        return redirect()->intended(route('dashboard', absolute: false));
+            $solicitud->session()->put('auth.password_confirmed_at', time());
+
+            return redirect()->intended(route('dashboard', absolute: false));
+        }
     }
-}

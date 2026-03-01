@@ -1,39 +1,70 @@
 <?php
 
-namespace App\Models;
+    namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+    use Illuminate\Database\Eloquent\Factories\HasFactory;
+    use Illuminate\Database\Eloquent\Model;
+    use App\Models\Taxi;
 
-class Conductor extends Model
-{
-    use HasFactory;
+    class Conductor extends Model {
+        use HasFactory;
 
-    protected $fillable = ['user_id', 'license_number', 'rating', 'is_active'];
+        protected $fillable = ['user_id', 'license_number', 'rating', 'is_active'];
 
-    protected $casts = [
-        'rating' => 'float',
-        'is_active' => 'boolean',
-    ];
+        protected $casts = [
+            'rating' => 'float',
+            'is_active' => 'boolean',
+        ];
 
-    public function user()
-    {
-        return $this->belongsTo(User::class);
+        public function user() {
+
+            return $this->belongsTo(User::class);
+        }
+
+        public function taxi() {
+
+            return $this->hasOne(Taxi::class);
+        }
+
+        public function ensureTaxiExists(string $statusIfCreate = 'available'): Taxi
+        {
+            if ($this->relationLoaded('taxi') && $this->taxi) {
+                return $this->taxi;
+            }
+
+            $existingTaxi = $this->taxi()->first();
+            if ($existingTaxi) {
+                $this->setRelation('taxi', $existingTaxi);
+                return $existingTaxi;
+            }
+
+            $plateBase = 'TMP-' . $this->id . '-' . strtoupper(bin2hex(random_bytes(3)));
+            $plate = $plateBase;
+            $suffix = 0;
+            while (Taxi::where('plate', $plate)->exists()) {
+                $suffix++;
+                $plate = $plateBase . '-' . $suffix;
+            }
+
+            $createdTaxi = $this->taxi()->create([
+                'plate' => $plate,
+                'model' => 'Pendiente',
+                'capacity' => 4,
+                'color' => null,
+                'status' => $statusIfCreate,
+            ]);
+
+            $this->setRelation('taxi', $createdTaxi);
+            return $createdTaxi;
+        }
+
+        public function viajes() {
+
+            return $this->hasMany(Viaje::class);
+        }
+
+        public function ubicacions() {
+
+            return $this->hasMany(ubicacion::class);
+        }
     }
-
-    public function taxi()
-    {
-        return $this->hasOne(Taxi::class);
-    }
-
-    public function viajes()
-    {
-        return $this->hasMany(Viaje::class);
-    }
-
-    public function ubicacions()
-    {
-        return $this->hasMany(ubicacion::class);
-    }
-}
-

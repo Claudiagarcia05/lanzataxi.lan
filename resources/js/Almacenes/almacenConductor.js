@@ -1,8 +1,7 @@
-﻿// ...existing code...
-// Eliminar bloque actions duplicado, dejar solo el que está dentro de defineStore
+﻿// Eliminar bloque actions duplicado, dejar solo el que está dentro de defineStore
 import { defineStore } from 'pinia'
 import { useAuthStore } from './almacenAutenticacion'
-import { useViajeStore } from './almacenViaje'
+import { useTripStore } from './almacenViaje'
 import axios from 'axios'
 
 export const useConductorStore = defineStore('conductor', {
@@ -49,7 +48,7 @@ export const useConductorStore = defineStore('conductor', {
         // Sincronizar datos de usuario autenticado
         if (datosPerfil.user) {
           auth.usuario = {
-            ...auth.usuario,
+            ...(auth.usuario || {}),
             name: datosPerfil.user.name,
             email: datosPerfil.user.email,
             phone: datosPerfil.user.phone,
@@ -136,7 +135,9 @@ export const useConductorStore = defineStore('conductor', {
 
     async actualizarEstadisticas() {
       const storeViaje = useTripStore()
-      const viajesHoy = storeViaje.viajesHoy.filter(t => t.conductorId === this.perfil?.id)
+      const auth = useAuthStore()
+      const conductorUserId = this.perfil?.id || auth.usuario?.id
+      const viajesHoy = storeViaje.viajesHoy.filter(t => t.conductorId === conductorUserId)
       const gananciasHoy = viajesHoy.reduce((suma, viaje) => suma + (viaje.price || 0), 0)
 
       this.estadisticas = {
@@ -153,13 +154,9 @@ export const useConductorStore = defineStore('conductor', {
       this.actualizarEstadisticas()
     },
 
-    // async obtenerPerfilConductor() { return this.obtenerPerfilConductor() },
-    // toggleOnlineStatus eliminado, solo dejar para Mi Perfil si es necesario
     async setOnlineStatus(valor) { return this.establecerEstadoEnLinea(valor) },
     startubicacionTracking() { return this.iniciarSeguimientoUbicacion() },
-    stopubicacionTracking() { return this.detenerSeguimientoUbicacion() },
-    async actualizarEstadisticas() { return this.actualizarEstadisticas() },
-    async aceptarViaje(viajeId) { return this.aceptarViaje(viajeId) }
+    stopubicacionTracking() { return this.detenerSeguimientoUbicacion() }
   }
 })
 

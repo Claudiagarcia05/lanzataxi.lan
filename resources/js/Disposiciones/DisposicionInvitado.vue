@@ -2,7 +2,7 @@
     <div class="flex min-h-screen flex-col items-center bg-gray-100 pt-6 sm:justify-center sm:pt-0">
         <div>
             <Link href="/">
-                <LogoAplicacion class="h-20 w-20 fill-current text-gray-500" />
+                <LogoAplicacion class="h-20 w-20 fill-current text-gray-500"/>
             </Link>
         </div>
 
@@ -11,6 +11,7 @@
         </div>
     </div>
 </template>
+
 
 <script setup>
 import LogoAplicacion from '../Componentes/LogoAplicacion.vue';

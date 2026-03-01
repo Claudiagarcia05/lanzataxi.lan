@@ -1,24 +1,22 @@
 <?php
 
-namespace App\Models;
+    namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+    use Illuminate\Database\Eloquent\Factories\HasFactory;
+    use Illuminate\Database\Eloquent\Model;
 
-class Taxi extends Model
-{
-    use HasFactory;
+    class Taxi extends Model {
+        use HasFactory;
 
-    protected $fillable = ['conductor_id', 'plate', 'model', 'capacity', 'color', 'status'];
+        protected $fillable = ['conductor_id', 'plate', 'model', 'capacity', 'color', 'status'];
 
-    public function conductor()
-    {
-        return $this->belongsTo(Conductor::class);
+        public function conductor() {
+
+            return $this->belongsTo(Conductor::class);
+        }
+
+        public function viajes() {
+
+            return $this->hasMany(Viaje::class);
+        }
     }
-
-    public function viajes()
-    {
-        return $this->hasMany(Viaje::class);
-    }
-}
-
