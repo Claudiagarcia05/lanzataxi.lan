@@ -3,7 +3,6 @@
   <div class="min-h-screen bg-neutral-soft">
     <!-- Barra de navegación superior -->
     <BarraNavegacion />
-
     <!-- Contenido principal -->
     <main id="main-content">
       <!-- Sección de cabecera -->

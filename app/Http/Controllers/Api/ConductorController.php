@@ -5,6 +5,7 @@
     use App\Http\Controllers\Controller;
     use App\Models\Conductor;
     use Illuminate\Http\Request;
+    use Illuminate\Support\Carbon;
 
     class ConductorController extends Controller {
         public function profile(Request $solicitud) {
@@ -88,10 +89,43 @@
                 }
             }
 
+            $now = Carbon::now();
+
+            $monthKey = $now->format('Y-m');
+            if (($conductor->online_month ?? null) !== $monthKey) {
+                $conductor->online_month = $monthKey;
+                $conductor->online_seconds_month = 0;
+                if ($conductor->is_active) {
+                    $conductor->online_since = $now;
+                }
+                $conductor->save();
+            }
+
+            if ($conductor->is_active && !$conductor->online_since) {
+                $conductor->online_since = $now;
+                $conductor->save();
+            }
+
+            $connectedSeconds = (int) ($conductor->online_seconds ?? 0);
+            if ($conductor->is_active && $conductor->online_since) {
+                $connectedSeconds += $conductor->online_since->diffInSeconds($now);
+            }
+
+            $connectedSecondsMonth = (int) ($conductor->online_seconds_month ?? 0);
+            if ($conductor->is_active && $conductor->online_since) {
+                $connectedSecondsMonth += $conductor->online_since->diffInSeconds($now);
+            }
+
             return response()->json([
                 'is_active' => (bool) $conductor->is_active,
                 'rating' => $conductor->rating,
                 'taxi' => $conductor->taxi,
+                'connected_seconds' => $connectedSeconds,
+                'connected_hours' => round($connectedSeconds / 3600, 2),
+                'connected_seconds_month' => $connectedSecondsMonth,
+                'connected_hours_month' => round($connectedSecondsMonth / 3600, 2),
+                'online_month' => $conductor->online_month,
+                'online_since' => $conductor->online_since?->toIso8601String(),
             ]);
         }
 

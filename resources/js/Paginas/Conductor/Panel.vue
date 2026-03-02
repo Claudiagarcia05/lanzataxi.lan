@@ -19,7 +19,7 @@
         </div>
       </div>
 
-    <div v-if="solicitudesPendientes.length > 0" class="fixed top-24 right-6 w-96 max-h-[calc(100vh-7rem)] overflow-auto bg-white rounded-2xl shadow-sm border border-neutral-volcanic z-40">
+    <div v-if="!estaOcupado && solicitudesPendientes.length > 0" class="fixed top-24 right-6 w-96 max-h-[calc(100vh-7rem)] overflow-auto bg-white rounded-2xl shadow-sm border border-neutral-volcanic z-40">
       <div class="p-4 border-b border-neutral-volcanic flex items-center justify-between">
         <h3 class="font-semibold text-neutral-dark">
           <svg class="inline-block w-5 h-5 mr-2" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" v-html="icon('fileText')"></svg>
@@ -71,7 +71,6 @@
         </div>
       </div>
     </div>
-
 
     <div v-if="viajesAceptados.length > 0" class="mb-8">
       <h3 class="font-semibold text-neutral-dark mb-4 text-lg">
@@ -126,10 +125,14 @@
     </div>
 
     <div class="bg-white rounded-xl shadow-sm">
-      <div class="p-6 border-b border-neutral-volcanic">
+      <div class="p-6 border-b border-neutral-volcanic flex items-center justify-between gap-4">
         <h3 class="font-semibold text-neutral-dark">
           Viajes de hoy
         </h3>
+
+        <span class="px-3 py-1 rounded-full text-sm font-medium select-none" :class="estaOcupado ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'" aria-live="polite">
+          {{ estaOcupado ? 'Ocupado' : 'Libre' }}
+        </span>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full">
@@ -221,7 +224,6 @@ import svgTaxiFront from 'bootstrap-icons/icons/taxi-front.svg?raw'
 import svgPersonCircle from 'bootstrap-icons/icons/person-circle.svg?raw'
 import svgPlayFill from 'bootstrap-icons/icons/play-fill.svg?raw'
 import svgCheck2Circle from 'bootstrap-icons/icons/check2-circle.svg?raw'
-import svgCalendarDay from 'bootstrap-icons/icons/calendar-day.svg?raw'
 import svgClock from 'bootstrap-icons/icons/clock.svg?raw'
 import svgPerson from 'bootstrap-icons/icons/person.svg?raw'
 import svgGeoAlt from 'bootstrap-icons/icons/geo-alt.svg?raw'
@@ -235,6 +237,7 @@ const conductorStore = useConductorStore()
 
 const iconPaths = {
   viajes: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
+  calendar: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
   money: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
 }
 
@@ -257,7 +260,6 @@ const iconos = {
   personCircle: innerSvg(svgPersonCircle),
   playFill: innerSvg(svgPlayFill),
   check2Circle: innerSvg(svgCheck2Circle),
-  calendarDay: innerSvg(svgCalendarDay),
   clock: innerSvg(svgClock),
   person: innerSvg(svgPerson),
   geoAlt: innerSvg(svgGeoAlt),
@@ -276,7 +278,7 @@ const estadisticas = computed(() => {
   const earnings = viajesHoy.reduce((sum, t) => sum + (t.price || 0), 0)
 
   return [
-    { label: 'Viajes hoy', value: viajesHoy.length, iconType: 'svg', icon: 'calendarDay' },
+    { label: 'Viajes hoy', value: viajesHoy.length, iconType: 'path', icon: 'calendar' },
     { label: 'Ganancias hoy', value: `${earnings.toFixed(2)} €`, iconType: 'path', icon: 'money' }
   ]
 })
@@ -291,9 +293,12 @@ const viajesAceptados = computed(() => {
   return viajeStore.viajesConductor.filter(t => ['accepted', 'in_progress'].includes(t.estado))
 })
 
+const estaOcupado = computed(() => viajesAceptados.value.length > 0)
+
 const viajesHoy = computed(() => {
 
   const today = new Date().toDateString()
+  
   return viajeStore.viajesConductor
     .filter(t => new Date(t.date).toDateString() === today && ['accepted', 'in_progress', 'completed'].includes(t.estado))
     .sort((a, b) => new Date(b.date) - new Date(a.date))

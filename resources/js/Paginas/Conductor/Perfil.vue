@@ -38,7 +38,6 @@
               <span>Editar información</span>
             </button>
           </div>
-          <!-- Comentario de feedback eliminado -->
           <div v-if="!editingPersonal" class="space-y-3">
             <div class="flex">
               <span class="w-32 text-sm text-neutral-slate">Nombre:</span>
@@ -180,6 +179,7 @@ const preferences = reactive({
 })
 
 const isPasswordStrong = computed(() => {
+
   return password.new?.length >= 8 &&
          /[A-Z]/.test(password.new) &&
          /[a-z]/.test(password.new) &&
@@ -187,6 +187,7 @@ const isPasswordStrong = computed(() => {
          /[!@#$%^&*]/.test(password.new)
 })
 const canChangePassword = computed(() => {
+
   return isPasswordStrong.value &&
          password.new === password.confirm
 })
@@ -204,20 +205,24 @@ const strengthColor = (level) => {
   if (passwordStrength.value >= level) {
     if (passwordStrength.value <= 2) return 'bg-red-500'
     if (passwordStrength.value <= 3) return 'bg-yellow-500'
+
     return 'bg-success-jable'
   }
+
   return 'bg-neutral-volcanic'
 }
 const strengthMessage = computed(() => {
   if (!password.new) return ''
   if (passwordStrength.value <= 2) return 'Contraseña débil'
   if (passwordStrength.value <= 3) return 'Contraseña media'
+
   return 'Contraseña fuerte'
 })
 const strengthTextColor = computed(() => {
   if (!password.new) return ''
   if (passwordStrength.value <= 2) return 'text-red-500'
   if (passwordStrength.value <= 3) return 'text-yellow-600'
+
   return 'text-success-jable'
 })
 const handleAvatarUpload = async (event) => {
@@ -226,11 +231,13 @@ const handleAvatarUpload = async (event) => {
     if (file.size > 2 * 1024 * 1024) {
       errorMsg.value = 'La imagen no puede superar los 2MB';
       setTimeout(() => { errorMsg.value = ''; }, 4000);
+
       return
     }
     if (!file.type.startsWith('image/')) {
       errorMsg.value = 'Solo se permiten imágenes';
       setTimeout(() => { errorMsg.value = ''; }, 4000);
+
       return
     }
     const reader = new FileReader()
@@ -281,10 +288,12 @@ const cancelEditingPersonal = () => {
 }
 const validateEmail = (email) => {
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
   return re.test(email)
 }
 const validatePhone = (phone) => {
   const re = /^[0-9]{9}$/
+
   return re.test(phone)
 }
 const savePersonalInfo = async () => {
@@ -292,10 +301,12 @@ const savePersonalInfo = async () => {
   phoneError.value = ''
   if (!validateEmail(form.email)) {
     emailError.value = 'Email no válido'
+
     return
   }
   if (form.phone && !validatePhone(form.phone)) {
     phoneError.value = 'Teléfono debe tener 9 dígitos'
+    
     return
   }
   try {

@@ -8,6 +8,11 @@ export const useConductorStore = defineStore('conductor', {
   state: () => ({
     perfil: null,
     estaEnLinea: false,
+    tiempoConectadoSegundos: 0,
+    tiempoConectadoMesSegundos: 0,
+    onlineSince: null,
+    onlineMonth: null,
+    estadoActualizadoEnMs: null,
     estadisticas: {
       viajesHoy: 0,
       gananciasHoy: 0,
@@ -27,10 +32,28 @@ export const useConductorStore = defineStore('conductor', {
     estaDisponible: (state) => state.estaEnLinea && state.perfil?.verified,
     // isOnline y isAvailable eliminados, solo dejar para Mi Perfil si es necesario
     formattedRating: (state) => state.estadisticas.valoracion.toFixed(2),
-    todayEarningsFormatted: (state) => `${state.estadisticas.gananciasHoy.toFixed(2)} €`
+    todayEarningsFormatted: (state) => `${state.estadisticas.gananciasHoy.toFixed(2)} €`,
+    horasConectado: (state) => (Number(state.tiempoConectadoMesSegundos || 0) / 3600),
   },
 
   actions: {
+    async obtenerEstadoConductor() {
+      const respuestaEstado = await axios.get('/api/conductor/status')
+
+      this.estaEnLinea = Boolean(respuestaEstado.data.is_active)
+      this.estadisticas = {
+        ...this.estadisticas,
+        valoracion: Number(respuestaEstado.data.rating || this.estadisticas.valoracion),
+      }
+      this.tiempoConectadoSegundos = Number(respuestaEstado.data.connected_seconds || 0)
+      this.tiempoConectadoMesSegundos = Number(respuestaEstado.data.connected_seconds_month || 0)
+      this.onlineMonth = respuestaEstado.data.online_month || null
+      this.onlineSince = respuestaEstado.data.online_since || null
+      this.estadoActualizadoEnMs = Date.now()
+
+      return respuestaEstado.data
+    },
+
     async obtenerPerfilConductor() {
       this.cargando = true
       try {
@@ -80,6 +103,12 @@ export const useConductorStore = defineStore('conductor', {
           ...this.estadisticas,
           valoracion: Number(respuestaEstado.data.rating || this.estadisticas.valoracion),
         }
+
+        this.tiempoConectadoSegundos = Number(respuestaEstado.data.connected_seconds || 0)
+        this.tiempoConectadoMesSegundos = Number(respuestaEstado.data.connected_seconds_month || 0)
+        this.onlineMonth = respuestaEstado.data.online_month || null
+        this.onlineSince = respuestaEstado.data.online_since || null
+        this.estadoActualizadoEnMs = Date.now()
       } catch (error) {
         console.error('Error fetching conductor perfil:', error)
       } finally {
@@ -94,7 +123,25 @@ export const useConductorStore = defineStore('conductor', {
     async establecerEstadoEnLinea(valor) {
       try {
         this.estaEnLinea = valor
-        await axios.patch('/api/conductor/status', { is_active: valor })
+        const respuesta = await axios.patch('/api/conductor/status', { is_active: valor })
+
+        if (respuesta?.data) {
+          this.estaEnLinea = Boolean(respuesta.data.is_active)
+          if (respuesta.data.connected_seconds != null) {
+            this.tiempoConectadoSegundos = Number(respuesta.data.connected_seconds || 0)
+          }
+          if (respuesta.data.connected_seconds_month != null) {
+            this.tiempoConectadoMesSegundos = Number(respuesta.data.connected_seconds_month || 0)
+          }
+          if (respuesta.data.online_month !== undefined) {
+            this.onlineMonth = respuesta.data.online_month || null
+          }
+          if (respuesta.data.online_since !== undefined) {
+            this.onlineSince = respuesta.data.online_since || null
+          }
+
+          this.estadoActualizadoEnMs = Date.now()
+        }
         if (this.estaEnLinea) {
           this.iniciarSeguimientoUbicacion()
         } else {

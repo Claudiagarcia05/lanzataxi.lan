@@ -42,7 +42,19 @@ export const useAuthStore = defineStore('auth', {
 
                 return { success: true }
             } catch (error) {
+                const status = error.response?.status
                 const message = error.response?.data?.message || 'No se pudo iniciar sesión'
+
+                // Si el backend responde 401 (credenciales inválidas), asegurar estado "deslogueado"
+                // para evitar que se reutilice un token/usuario anterior.
+                if (status === 401) {
+                    this.usuario = null
+                    this.token = null
+                    localStorage.removeItem('token')
+                    localStorage.removeItem('usuario')
+                    delete axios.defaults.headers.common['Authorization']
+                }
+
                 this.error = message
                 return { success: false, error: message }
             } finally {
@@ -84,6 +96,14 @@ export const useAuthStore = defineStore('auth', {
 
         async logout() {
             try {
+                // 1) Cerrar sesión web (Inertia/Laravel) para que las rutas con middleware `auth`
+                //    no sigan permitiendo acceso.
+                await axios.post('/logout')
+            } catch {
+            }
+
+            try {
+                // 2) Revocar token API si existe
                 if (this.token) {
                     await axios.post('/api/logout')
                 }
@@ -95,6 +115,10 @@ export const useAuthStore = defineStore('auth', {
             localStorage.removeItem('token')
             localStorage.removeItem('usuario')
             delete axios.defaults.headers.common['Authorization']
+
+            // 3) Borrar cookie `token` (se usaba para rehidratar auth). Si no se borra,
+            //    `checkAuth()` puede volver a autenticar desde cookie después del logout.
+            document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax'
         },
 
         async checkAuth() {

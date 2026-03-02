@@ -61,23 +61,9 @@
               </g>
 
               <g v-for="(p, idx) in puntosGrafico" :key="p.key">
-                <rect
-                  :x="idx * anchoBarra + paddingBarra"
-                  :y="170 - p.alto"
-                  :width="anchoBarra - paddingBarra * 2"
-                  :height="p.alto"
-                  class="fill-current text-lanzarote-blue"
-                  rx="3"
-                />
+                <rect :x="idx * anchoBarra + paddingBarra" :y="170 - p.alto" :width="anchoBarra - paddingBarra * 2" :height="p.alto" class="fill-current text-lanzarote-blue" rx="3"/>
 
-                <text
-                  v-if="mostrarEtiqueta(idx)"
-                  :x="idx * anchoBarra + (anchoBarra / 2)"
-                  y="192"
-                  text-anchor="middle"
-                  class="fill-current text-neutral-slate"
-                  font-size="10"
-                >
+                <text v-if="mostrarEtiqueta(idx)" :x="idx * anchoBarra + (anchoBarra / 2)" y="192" text-anchor="middle" class="fill-current text-neutral-slate" font-size="10">
                   {{ p.label }}
                 </text>
               </g>
@@ -111,27 +97,31 @@
             <div class="space-y-4">
               <div class="flex justify-between items-center py-2 border-b border-neutral-volcanic">
                 <span class="text-neutral-slate">Horas conectado</span>
-                <span class="font-semibold text-neutral-dark">N/D</span>
+                <span class="font-semibold text-neutral-dark">{{ horasConectadoLabel }}</span>
               </div>
               
               <div class="flex justify-between items-center py-2 border-b border-neutral-volcanic">
                 <span class="text-neutral-slate">Kilómetros</span>
-                <span class="font-semibold text-neutral-dark">{{ metricasTotal.km.toFixed(1) }} km</span>
+                <span class="font-semibold text-neutral-dark">{{ metricasMes.km.toFixed(1) }} km</span>
               </div>
               
               <div class="flex justify-between items-center py-2 border-b border-neutral-volcanic">
-                <span class="text-neutral-slate">Ingreso/hora</span>
-                <span class="font-semibold text-green-600">N/D</span>
+                <span class="text-neutral-slate">Ingresos mensuales</span>
+                <span class="font-semibold text-green-600">{{ formatMoney(resumenMes.total) }}</span>
               </div>
               
               <div class="flex justify-between items-center py-2">
                 <span class="text-neutral-slate">Viajes completados</span>
-                <span class="font-semibold text-lanzarote-blue">{{ resumenTotal.viajes }}</span>
+                <span class="font-semibold text-lanzarote-blue">{{ viajesCompletadosMes.length }}</span>
               </div>
             </div>
 
+            <div v-if="esUltimoDiaMes" class="mt-4 bg-neutral-soft border border-neutral-volcanic rounded-lg p-3 text-sm text-neutral-dark">
+              Hoy es el último día del mes. Si quieres guardar tus Métricas clave en PDF, haz clic en “Exportar información”.
+            </div>
+
             <button class="w-full mt-6 bg-lanzarote-blue text-white font-medium py-3 px-4 rounded-lg hover:bg-lanzarote-yellow hover:text-black transition-colors" @click="exportInforme">
-              Exportar informe
+              Exportar información
             </button>
           </div>
         </div>
@@ -217,18 +207,167 @@
 
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import DisposicionConductor from '../../Disposiciones/DisposicionConductor.vue'
 import { useTripStore } from '../../Almacenes/almacenViaje.js'
+import { useConductorStore } from '../../Almacenes/almacenConductor.js'
+import { jsPDF } from 'jspdf'
 
 const filtroPeriodo = ref('all')
 
 const periodoGrafico = ref('7d')
 
 const viajeStore = useTripStore()
+const conductorStore = useConductorStore()
 
-const exportInforme = () => {
-  console.log('Exportando informe...')
+const nowMs = ref(Date.now())
+let tickIntervalId = null
+
+const mesActualKey = () => {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+
+  return `${y}-${m}`
+}
+
+const fileToDataUrl = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader()
+  reader.onload = () => resolve(reader.result)
+  reader.onerror = () => reject(new Error('No se pudo leer el archivo'))
+  reader.readAsDataURL(file)
+})
+
+const loadPublicImagePng = async (url) => {
+  const res = await fetch(url, { cache: 'no-store' })
+  if (!res.ok) return null
+  const blob = await res.blob()
+  const dataUrl = await fileToDataUrl(blob)
+
+  const dims = await new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight })
+    img.onerror = () => resolve(null)
+    img.src = dataUrl
+  })
+
+  return { dataUrl, dims }
+}
+
+const exportInforme = async () => {
+  const now = new Date()
+  const monthLabel = now.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
+  const fechaLabel = now.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+
+  await conductorStore.obtenerPerfilConductor().catch(() => {})
+
+  const perfil = conductorStore.perfil
+  const capacidad = perfil?.vehicle?.capacity
+  const datosPersonales = [
+    ['Nombre', perfil?.name || '—'],
+    ['Email', perfil?.email || '—'],
+    ['Teléfono', perfil?.phone || '—'],
+    ['Vehículo', perfil?.vehicle?.model || '—'],
+    ['Matrícula', perfil?.vehicle?.plate || '—'],
+    ['Capacidad', Number.isFinite(Number(capacidad)) ? `${Number(capacidad)} plazas` : '—'],
+  ]
+
+  const rows = [
+    ['Horas conectado', horasConectadoLabel.value],
+    ['Kilómetros', `${metricasMes.value.km.toFixed(1)} km`],
+    ['Ingresos mensuales', formatMoney(resumenMes.value.total)],
+    ['Viajes completados', String(viajesCompletadosMes.value.length)],
+  ]
+
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' })
+  const marginX = 48
+  const pageWidth = doc.internal.pageSize.getWidth()
+  let y = 56
+
+  const logo = await loadPublicImagePng('/images/logo.png').catch(() => null)
+  if (logo?.dataUrl) {
+    const maxW = 140
+    const maxH = 52
+
+    let w = maxW
+    let h = 40
+    if (logo.dims?.w && logo.dims?.h) {
+      const ratio = logo.dims.w / logo.dims.h
+      w = Math.min(maxW, maxH * ratio)
+      h = w / ratio
+      if (h > maxH) {
+        h = maxH
+        w = h * ratio
+      }
+    }
+
+    doc.addImage(logo.dataUrl, 'PNG', marginX, y - 8, w, h)
+    y += h + 10
+  }
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(11)
+  doc.setTextColor(80)
+  doc.text(`Informe mensual · ${monthLabel}`, marginX, y)
+  doc.text(`Generado: ${fechaLabel}`, pageWidth - marginX, y, { align: 'right' })
+  doc.setTextColor(0)
+  y += 22
+
+  doc.setDrawColor(220)
+  doc.line(marginX, y, pageWidth - marginX, y)
+  y += 22
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(13)
+  doc.text('Datos personales', marginX, y)
+  y += 16
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(11)
+  const labelW = 110
+  const valueW = pageWidth - marginX * 2 - labelW
+
+  for (const [label, value] of datosPersonales) {
+    doc.setTextColor(90)
+    doc.text(`${label}:`, marginX, y)
+    doc.setTextColor(0)
+    doc.text(String(value), marginX + labelW, y, { maxWidth: valueW })
+    y += 16
+  }
+
+  y += 6
+  doc.setDrawColor(220)
+  doc.line(marginX, y, pageWidth - marginX, y)
+  y += 22
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(13)
+  doc.text('Métricas clave', marginX, y)
+  y += 18
+
+  doc.setFontSize(12)
+  const metricLabelWidth = 260
+  const metricValueX = pageWidth - marginX
+  for (const [label, value] of rows) {
+    doc.setFont('helvetica', 'normal')
+    doc.text(String(label), marginX, y, { maxWidth: metricLabelWidth })
+    doc.setFont('helvetica', 'bold')
+    doc.text(String(value), metricValueX, y, { align: 'right' })
+    y += 22
+    doc.setFont('helvetica', 'normal')
+    doc.setDrawColor(235)
+    doc.line(marginX, y, pageWidth - marginX, y)
+    y += 14
+  }
+
+  const fileMonth = mesActualKey()
+  doc.save(`metricas-clave-${fileMonth}.pdf`)
 }
 
 const iconPaths = {
@@ -245,6 +384,7 @@ const iconPath = (name) => iconPaths[name] || ''
 
 const formatDate = (dateString) => {
   const date = new Date(dateString)
+
   return date.toLocaleDateString('es-ES', {
     day: '2-digit',
     month: 'short',
@@ -256,6 +396,7 @@ const formatDate = (dateString) => {
 
 const formatMoney = (value) => {
   const number = Number(value || 0)
+
   return `${number.toFixed(2)} €`
 }
 
@@ -265,6 +406,7 @@ const metodoPagoLabel = (metodo) => {
     card: 'Tarjeta',
     app: 'Cartera',
   }
+
   return map[metodo] || '—'
 }
 
@@ -273,33 +415,63 @@ const startOfWeek = (date) => {
   const day = d.getDay() || 7
   d.setHours(0, 0, 0, 0)
   d.setDate(d.getDate() - (day - 1))
+
   return d
 }
 
 const startOfMonth = (date) => {
   const d = new Date(date)
+
   return new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0)
 }
 
+const esUltimoDiaMes = computed(() => {
+  const d = new Date()
+  const ultimo = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+
+  return d.getDate() === ultimo
+})
+
 const misViajesCompletados = computed(() => {
+
   return viajeStore.viajesConductor
     .filter(t => t.estado === 'completed')
 })
 
 const viajeTienePago = (t) => {
   if (t?.pago && t.pago.status === 'paid') return true
-  // Fallback: viajes completados en cash/card sin registro (histórico)
+
   return t?.estado === 'completed' && ['cash', 'card'].includes(t?.pago_method)
 }
 
 const viajesConIngreso = computed(() => {
+
   return viajeStore.viajesConductor.filter(viajeTienePago)
 })
 
 const resumenTotal = computed(() => {
   const viajes = viajesConIngreso.value
   const total = viajes.reduce((sum, t) => sum + (Number(t.pago?.amount ?? t.price) || 0), 0)
+
   return { viajes: viajes.length, total }
+})
+
+const segundosConectadoMes = computed(() => {
+  const base = Number(conductorStore.tiempoConectadoMesSegundos || 0)
+  if (!conductorStore.estaEnLinea) return base
+  const last = Number(conductorStore.estadoActualizadoEnMs || 0)
+  if (!last) return base
+  const extra = Math.floor((nowMs.value - last) / 1000)
+
+  return base + Math.max(0, extra)
+})
+
+const horasConectadoLabel = computed(() => {
+  const total = Math.max(0, Math.floor(Number(segundosConectadoMes.value || 0)))
+  const h = Math.floor(total / 3600)
+  const m = Math.floor((total % 3600) / 60)
+
+  return `${h} h ${String(m).padStart(2, '0')} min`
 })
 
 const resumenSemana = computed(() => {
@@ -307,6 +479,7 @@ const resumenSemana = computed(() => {
   const from = startOfWeek(now)
   const viajes = viajesConIngreso.value.filter(t => new Date(t.pago?.created_at || t.created_at || t.date) >= from)
   const total = viajes.reduce((sum, t) => sum + (Number(t.pago?.amount ?? t.price) || 0), 0)
+
   return { viajes: viajes.length, total }
 })
 
@@ -315,18 +488,28 @@ const resumenMes = computed(() => {
   const from = startOfMonth(now)
   const viajes = viajesConIngreso.value.filter(t => new Date(t.pago?.created_at || t.created_at || t.date) >= from)
   const total = viajes.reduce((sum, t) => sum + (Number(t.pago?.amount ?? t.price) || 0), 0)
+
   return { viajes: viajes.length, total }
 })
 
 const viajesRecientes = computed(() => {
+
   return [...misViajesCompletados.value]
     .sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date))
     .slice(0, 10)
 })
 
-const metricasTotal = computed(() => {
-  const viajes = misViajesCompletados.value
+const viajesCompletadosMes = computed(() => {
+  const now = new Date()
+  const from = startOfMonth(now)
+
+  return misViajesCompletados.value.filter(t => new Date(t.created_at || t.date) >= from)
+})
+
+const metricasMes = computed(() => {
+  const viajes = viajesCompletadosMes.value
   const km = viajes.reduce((sum, t) => sum + (t.distance || 0), 0)
+
   return { km }
 })
 
@@ -387,6 +570,7 @@ const diasEnRango = computed(() => {
     const label = d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
     buckets.push({ key, label, total: 0 })
   }
+
   return buckets
 })
 
@@ -407,6 +591,7 @@ const puntosGrafico = computed(() => {
   }
 
   const max = Math.max(...buckets.map(b => b.total), 1)
+
   return buckets.map(b => ({
     ...b,
     alto: Math.round((b.total / max) * 150),
@@ -415,6 +600,7 @@ const puntosGrafico = computed(() => {
 
 const anchoBarra = computed(() => {
   const n = puntosGrafico.value.length || 1
+  
   return 700 / n
 })
 
@@ -430,5 +616,20 @@ const mostrarEtiqueta = (idx) => {
 
 onMounted(() => {
   viajeStore.fetchTrips()
+  conductorStore.obtenerEstadoConductor().catch(() => {})
+
+  tickIntervalId = setInterval(() => {
+    nowMs.value = Date.now()
+
+    const actual = mesActualKey()
+    if (conductorStore.onlineMonth && conductorStore.onlineMonth !== actual) {
+      conductorStore.obtenerEstadoConductor().catch(() => {})
+    }
+  }, 1000)
+})
+
+onUnmounted(() => {
+  if (tickIntervalId) clearInterval(tickIntervalId)
+  tickIntervalId = null
 })
 </script>

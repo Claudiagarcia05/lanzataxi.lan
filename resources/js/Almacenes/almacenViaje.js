@@ -125,34 +125,26 @@ export const useTripStore = defineStore('viaje', {
                 }
 
                 if (assumeConductor) {
-                    const results = await Promise.allSettled([
-                        axios.get(endpoint),
-                        axios.get('/api/conductor/viajes/available'),
-                    ])
+                    // 1) Siempre cargar primero mis viajes
+                    const misViajesResponse = await axios.get(endpoint)
+                    const misViajes = (misViajesResponse.data || []).map(this.mapearViaje)
 
-                    const [misViajesResult, disponiblesResult] = results
+                    // 2) Si ya tengo un viaje accepted/in_progress, NO pedir ofertas.
+                    //    Así en el frontend dejan de "entrar" nuevas ofertas mientras está ocupado.
+                    const conductorOcupado = misViajes.some(t => ['accepted', 'in_progress'].includes(t.estado))
 
-                    const misViajesData = misViajesResult.status === 'fulfilled'
-                        ? (misViajesResult.value.data || [])
-                        : []
-
-                    const disponiblesData = disponiblesResult.status === 'fulfilled'
-                        ? (disponiblesResult.value.data || [])
-                        : []
-
-                    if (misViajesResult.status === 'rejected' && disponiblesResult.status === 'rejected') {
-                        throw misViajesResult.reason || disponiblesResult.reason
+                    let disponibles = []
+                    if (!conductorOcupado) {
+                        try {
+                            const disponiblesResponse = await axios.get('/api/conductor/viajes/available')
+                            disponibles = (disponiblesResponse.data || [])
+                                .map(this.mapearViaje)
+                                .filter(t => !this.ignoredOfferIds.includes(t.id))
+                        } catch (e) {
+                            console.error('❌ Error fetching available trips:', e?.response?.data || e?.message)
+                            this.error = e?.response?.data?.message || 'No se pudieron cargar las ofertas'
+                        }
                     }
-
-                    if (disponiblesResult.status === 'rejected') {
-                        console.error('❌ Error fetching available trips:', disponiblesResult.reason?.response?.data || disponiblesResult.reason?.message)
-                        this.error = disponiblesResult.reason?.response?.data?.message || 'No se pudieron cargar las ofertas'
-                    }
-
-                    const misViajes = misViajesData.map(this.mapearViaje)
-                    const disponibles = disponiblesData
-                        .map(this.mapearViaje)
-                        .filter(t => !this.ignoredOfferIds.includes(t.id))
 
                     this.viajes = [...disponibles, ...misViajes]
                 } else {

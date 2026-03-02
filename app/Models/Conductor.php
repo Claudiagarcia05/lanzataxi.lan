@@ -9,11 +9,23 @@
     class Conductor extends Model {
         use HasFactory;
 
-        protected $fillable = ['user_id', 'license_number', 'rating', 'is_active'];
+        protected $fillable = [
+            'user_id',
+            'license_number',
+            'rating',
+            'is_active',
+            'online_seconds',
+            'online_since',
+            'online_seconds_month',
+            'online_month',
+        ];
 
         protected $casts = [
             'rating' => 'float',
             'is_active' => 'boolean',
+            'online_seconds' => 'integer',
+            'online_since' => 'datetime',
+            'online_seconds_month' => 'integer',
         ];
 
         public function user() {
