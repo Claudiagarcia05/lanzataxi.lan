@@ -35,6 +35,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Validate deploy secrets
+        shell: bash
+        env:
+          HOST: ${{ secrets.HOST }}
+          USERNAME: ${{ secrets.USERNAME }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          if [ -z "$HOST" ]; then
+            echo "Missing required secret: HOST"
+            exit 1
+          fi
+          if [ -z "$USERNAME" ]; then
+            echo "Missing required secret: USERNAME"
+            exit 1
+          fi
+          if [ -z "$SSH_KEY" ]; then
+            echo "Missing required secret: SSH_KEY"
+            exit 1
+          fi
       - name: Deploy to Server
         uses: appleboy/ssh-action@v1.0.3
         with:
