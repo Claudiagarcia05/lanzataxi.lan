@@ -210,4 +210,4 @@ LanzaTaxi incluye una sección de sostenibilidad en la página principal con:
 
 ## Vídeo de Youtube
 
-Puedes ver el vídeo del proyecto en Youtube [aquí](    )
+Puedes ver el vídeo del proyecto en Youtube [aquí](https://youtu.be/sAE9Kq4x5Rk)
