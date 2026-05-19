@@ -205,7 +205,6 @@ LanzaTaxi incluye una sección de sostenibilidad en la página principal con:
 
 - **Métricas globales** de viajes completados, kilómetros recorridos y CO₂ evitado por digitalización.
 - **Calculadora de CO₂ interactiva** que estima el ahorro individual según los viajes al mes, la distancia media y las páginas en papel sustituidas.
-- **Documento de auditoría** disponible en [`docs/SOJ-Green-IT-Auditoria-y-Plan.md`](docs/SOJ-Green-IT-Auditoria-y-Plan.md).
 
 ---
 
